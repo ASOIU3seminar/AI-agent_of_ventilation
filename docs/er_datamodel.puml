@@ -1,0 +1,68 @@
+@startuml
+!theme plain
+hide circle
+skinparam linetype ortho
+
+entity "Project" as proj {
+  * project_id : UUID
+  --
+  name : String
+  created_at : DateTime
+}
+
+entity "Building" as bld {
+  * building_id : UUID
+  --
+  project_id : UUID <<FK>>
+  name : String
+}
+
+entity "Room (Помещение)" as room {
+  * room_id : UUID
+  --
+  building_id : UUID <<FK>>
+  cad_id : String
+  number : String
+  name : String
+  type : String
+  area : Float
+  height : Float
+  volume : Float
+  people_count : Integer
+}
+
+entity "VentSystem (Система)" as v_sys {
+  * system_id : UUID
+  --
+  project_id : UUID <<FK>>
+  designation : String (П1, В1, ВЕ)
+  total_air_flow : Float
+  pressure : Float
+}
+
+entity "Equipment (Оборудование)" as eq {
+  * equipment_id : UUID
+  --
+  system_id : UUID <<FK>>
+  type : String (Fan, Heater, Filter)
+  capacity : Float
+  power : Float
+}
+
+entity "Room_VentSystem (Связь)" as r_v_link {
+  * link_id : UUID
+  --
+  room_id : UUID <<FK>>
+  system_id : UUID <<FK>>
+  air_flow_supply : Float
+  air_flow_exhaust : Float
+}
+
+proj ||--o{ bld
+bld ||--o{ room
+proj ||--o{ v_sys
+v_sys ||--o{ eq
+room ||--o{ r_v_link
+v_sys ||--o{ r_v_link
+
+@enduml
