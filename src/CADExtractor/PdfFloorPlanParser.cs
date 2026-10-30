@@ -19,15 +19,19 @@ namespace HvacAutoCalculator.CADExtractor
         private static readonly Regex ToUnicodeRefRegex = new(@"/ToUnicode\s+(\d+)\s+0\s+R", RegexOptions.Compiled);
         private static readonly Regex BfCharRegex = new(@"<([0-9a-fA-F]{4})>\s*<([0-9a-fA-F]{4})>", RegexOptions.Compiled);
 
-        private static readonly Regex TfRegex = new(@"/(F\d+)\s+([0-9\.]+)\s+Tf", RegexOptions.Compiled);
+        private static readonly Regex TfRegex = new(@"/(F\d+)\s+[0-9\.]+\s+Tf", RegexOptions.Compiled);
         private static readonly Regex TmRegex = new(@"([0-9\.\-]+)\s+([0-9\.\-]+)\s+([0-9\.\-]+)\s+([0-9\.\-]+)\s+([0-9\.\-]+)\s+([0-9\.\-]+)\s+Tm", RegexOptions.Compiled);
         private static readonly Regex HexTjRegex = new(@"<([0-9a-fA-F]+)>\s*Tj", RegexOptions.Compiled);
         private static readonly Regex LiteralTjRegex = new(@"\(([^\(\)\\]+)\)\s*Tj", RegexOptions.Compiled);
 
-        // Формат номеров помещений из экспликации (-3.01, -3.22а, 1.02, 101 и т.д.)
-        private static readonly Regex ExplicationRoomNumRegex = new(@"^(-?[0-9]{1,3}\.[0-9]{2}[а-яА-Яa-zA-Z]?|[0-9]{1,4}[а-яА-Яa-zA-Z]?)$", RegexOptions.Compiled);
-        private static readonly Regex AreaRegex = new(@"^([0-9]{1,5}[\.,][0-9]{2})$", RegexOptions.Compiled);
+        // Паттерны для классификации токенов
+        private static readonly Regex RoomPattern = new(@"^(-?[0-9]{1,2}\.[0-9]{2}[а-яА-Яa-zA-Z]?|-[0-9]{2}\.[A-Za-zА-Яа-я0-9]{2}\.[0-9]{1,3}|[0-9]{1,2}\.[A-Za-z0-9]+\.[0-9]{1,3})$", RegexOptions.Compiled);
+        private static readonly Regex CompositeBasePattern = new(@"^-?[0-9]{1,2}\.[0-9]{2}$", RegexOptions.Compiled);
+        private static readonly Regex CompositeSuffixPattern = new(@"^[а-яА-Яa-zA-Z]$", RegexOptions.Compiled);
+        
+        private static readonly Regex AreaRegex = new(@"^[0-9]{1,5}[\.,][0-9]{2}$", RegexOptions.Compiled);
         private static readonly Regex FireCatRegex = new(@"^(В[1-4]|Д|А|Б|Г|-)$", RegexOptions.Compiled);
+        private static readonly Regex JunkRegex = new(@"^([-+]?\d+([.,]\d+)?|\d+:\d+)$", RegexOptions.Compiled);
 
         private class PdfTextToken
         {
@@ -47,7 +51,6 @@ namespace HvacAutoCalculator.CADExtractor
             byte[] rawBytes = File.ReadAllBytes(filePath);
             string rawLatin = Encoding.Latin1.GetString(rawBytes);
 
-            // 1. Индексируем все PDF-объекты
             var objects = new Dictionary<int, (string Body, int StartOffset)>();
             foreach (Match m in ObjRegex.Matches(rawLatin))
             {
@@ -55,50 +58,36 @@ namespace HvacAutoCalculator.CADExtractor
                 objects[id] = (m.Groups[2].Value, m.Groups[2].Index);
             }
 
-            // 2. Строим таблицы перекодировки ToUnicode CMap для каждого шрифта (F1, F2, F3...)
             var fontToObj = new Dictionary<string, int>();
-            foreach (var kvp in objects)
+            foreach (var kvp in objects.Where(x => x.Value.Body.Contains("/Font")))
             {
-                if (kvp.Value.Body.Contains("/Font"))
+                foreach (Match fm in FontMapRegex.Matches(kvp.Value.Body))
                 {
-                    foreach (Match fm in FontMapRegex.Matches(kvp.Value.Body))
-                    {
-                        fontToObj[fm.Groups[1].Value] = int.Parse(fm.Groups[2].Value);
-                    }
+                    fontToObj[fm.Groups[1].Value] = int.Parse(fm.Groups[2].Value);
                 }
             }
 
             var fontCmaps = new Dictionary<string, Dictionary<int, char>>();
             foreach (var kvp in fontToObj)
             {
-                string fontName = kvp.Key;
-                int fontObjId = kvp.Value;
-                if (!objects.TryGetValue(fontObjId, out var fontObj)) continue;
-
+                if (!objects.TryGetValue(kvp.Value, out var fontObj)) continue;
                 var tuMatch = ToUnicodeRefRegex.Match(fontObj.Body);
-                if (!tuMatch.Success) continue;
-
-                int tuObjId = int.Parse(tuMatch.Groups[1].Value);
-                if (!objects.TryGetValue(tuObjId, out var tuObj)) continue;
+                if (!tuMatch.Success || !objects.TryGetValue(int.Parse(tuMatch.Groups[1].Value), out var tuObj)) continue;
 
                 string cmapContent = DecompressObjectStream(rawBytes, rawLatin, tuObj.Body, tuObj.StartOffset);
                 var cmap = new Dictionary<int, char>();
                 foreach (Match bm in BfCharRegex.Matches(cmapContent))
                 {
-                    int cid = Convert.ToInt32(bm.Groups[1].Value, 16);
-                    int uni = Convert.ToInt32(bm.Groups[2].Value, 16);
-                    cmap[cid] = (char)uni;
+                    cmap[Convert.ToInt32(bm.Groups[1].Value, 16)] = (char)Convert.ToInt32(bm.Groups[2].Value, 16);
                 }
-                fontCmaps[fontName] = cmap;
+                fontCmaps[kvp.Key] = cmap;
             }
 
-            // 3. Извлекаем все текстовые элементы с координатами (X, Y) из потоков страницы
             var tokens = new List<PdfTextToken>();
-            foreach (var kvp in objects)
+            foreach (var kvp in objects.Where(x => x.Value.Body.Contains("stream")))
             {
-                if (!kvp.Value.Body.Contains("stream")) continue;
                 string streamText = DecompressObjectStream(rawBytes, rawLatin, kvp.Value.Body, kvp.Value.StartOffset);
-                if (string.IsNullOrEmpty(streamText) || !streamText.Contains("Tj")) continue;
+                if (string.IsNullOrEmpty(streamText) || (!streamText.Contains("Tj") && !streamText.Contains("TJ"))) continue;
 
                 string curFont = "F1";
                 double curX = 0, curY = 0;
@@ -118,114 +107,120 @@ namespace HvacAutoCalculator.CADExtractor
                     var hexTj = HexTjRegex.Match(line);
                     if (hexTj.Success)
                     {
-                        string decoded = DecodeCidHex(hexTj.Groups[1].Value, fontCmaps.GetValueOrDefault(curFont));
+                        string decoded = DecodeCidHex(hexTj.Groups[1].Value, fontCmaps.GetValueOrDefault(curFont, new Dictionary<int, char>()));
                         if (!string.IsNullOrWhiteSpace(decoded))
-                        {
                             tokens.Add(new PdfTextToken { X = curX, Y = curY, Font = curFont, Text = decoded.Trim() });
-                        }
-                        continue;
                     }
-
-                    var litTj = LiteralTjRegex.Match(line);
-                    if (litTj.Success)
+                    else
                     {
-                        string txt = litTj.Groups[1].Value.Trim();
-                        if (!string.IsNullOrWhiteSpace(txt))
-                        {
-                            tokens.Add(new PdfTextToken { X = curX, Y = curY, Font = curFont, Text = txt });
-                        }
+                        var litTj = LiteralTjRegex.Match(line);
+                        if (litTj.Success && !string.IsNullOrWhiteSpace(litTj.Groups[1].Value))
+                            tokens.Add(new PdfTextToken { X = curX, Y = curY, Font = curFont, Text = litTj.Groups[1].Value.Trim() });
                     }
                 }
             }
 
-            // 4. Собираем метки номеров комнат на самом чертеже (X > 6600)
-            var planTokens = tokens.Where(t => t.X > 6600).ToList();
-            var planRoomCoordinates = new Dictionary<string, (double X, double Y)>(StringComparer.OrdinalIgnoreCase);
-
-            for (int i = 0; i < planTokens.Count; i++)
+            foreach (var t in tokens.Where(x => CompositeBasePattern.IsMatch(x.Text)))
             {
-                var t = planTokens[i];
-                if (Regex.IsMatch(t.Text, @"^-?[0-9]{1,2}\.[0-9]{2}$"))
+                var suffix = tokens.FirstOrDefault(o => o != t && Math.Abs(o.X - t.X) < 50 && (t.Y - o.Y) > 20 && (t.Y - o.Y) < 300 && CompositeSuffixPattern.IsMatch(o.Text));
+                if (suffix != null)
                 {
-                    string roomNum = t.Text;
-                    // Проверяем, нет ли рядом одиночной буквы суффикса (например "-3.22" + "а" или "в")
-                    var suffix = planTokens.FirstOrDefault(other =>
-                        Math.Abs(other.X - t.X) < 25 &&
-                        (t.Y - other.Y) > 50 && (t.Y - other.Y) < 260 &&
-                        Regex.IsMatch(other.Text, @"^[а-яА-Яa-zA-Z]$"));
-
-                    if (suffix != null)
-                        roomNum += suffix.Text;
-
-                    if (!planRoomCoordinates.ContainsKey(roomNum))
-                        planRoomCoordinates[roomNum] = (t.X, t.Y);
+                    t.Text += suffix.Text;
+                    suffix.Text = "";
                 }
             }
+            tokens.RemoveAll(t => string.IsNullOrWhiteSpace(t.Text));
 
-            // 5. Парсим таблицу «Экспликация помещений» внутри PDF (X <= 6600)
-            var expTokens = tokens.Where(t => t.X <= 6600).ToList();
-            var rooms = new List<Room>();
-            var seenNumbers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var allRoomTokens = tokens.Where(t => RoomPattern.IsMatch(t.Text)).ToList();
+            var planCoords = new Dictionary<string, PdfTextToken>(StringComparer.OrdinalIgnoreCase);
+            var explicationCandidates = new List<PdfTextToken>();
 
-            var roomNumCandidates = expTokens
-                .Where(t => t.X > 850 && t.X < 6150 && Regex.IsMatch(t.Text, @"^-?[0-9]{1,2}\.[0-9]{2}[а-яА-Яa-zA-Z]?$"))
-                .OrderByDescending(t => t.Y)
-                .ThenByDescending(t => t.X)
-                .ToList();
-
-            int orderIdx = 0;
-            foreach (var numTok in roomNumCandidates)
+            foreach (var rt in allRoomTokens)
             {
-                // Отсекаем технические коды (если справа нет площади в этой же строке)
-                var rowItems = expTokens.Where(t => Math.Abs(t.X - numTok.X) <= 85 && (numTok.Y - t.Y) > 100 && (numTok.Y - t.Y) < 4200).ToList();
+                bool isTable = tokens.Any(t => t != rt && AreaRegex.IsMatch(t.Text) && 
+                    ((Math.Abs(t.X - rt.X) < 50 && Math.Abs(t.Y - rt.Y) < 4000) || 
+                     (Math.Abs(t.Y - rt.Y) < 50 && Math.Abs(t.X - rt.X) < 4000)));
 
-                var areaTok = rowItems.FirstOrDefault(t =>
-                    (numTok.Y - t.Y) >= 2200 && (numTok.Y - t.Y) <= 3300 &&
-                    AreaRegex.IsMatch(t.Text));
+                if (isTable)
+                    explicationCandidates.Add(rt);
+                else
+                    planCoords[rt.Text] = rt;
+            }
+
+            double minX = 999999, maxX = -999999, minY = 999999, maxY = -999999;
+            foreach (var pt in planCoords.Values)
+            {
+                if (pt.X < minX) minX = pt.X;
+                if (pt.X > maxX) maxX = pt.X;
+                if (pt.Y < minY) minY = pt.Y;
+                if (pt.Y > maxY) maxY = pt.Y;
+            }
+            if (minX > maxX) { minX = 0; maxX = 30000; minY = 0; maxY = 40000; }
+            
+            double padX = (maxX - minX) * 0.1; if (padX == 0) padX = 1000;
+            double padY = (maxY - minY) * 0.1; if (padY == 0) padY = 1000;
+            minX -= padX; maxX += padX; minY -= padY; maxY += padY;
+
+            var rooms = new List<Room>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            explicationCandidates = explicationCandidates.OrderByDescending(t => t.Y).ThenBy(t => t.X).ToList();
+            int orderIdx = 0;
+
+            foreach (var numTok in explicationCandidates)
+            {
+                if (!seen.Add(numTok.Text)) continue;
+
+                var colItems = tokens.Where(t => Math.Abs(t.X - numTok.X) <= 50 && Math.Abs(t.Y - numTok.Y) < 4000).ToList();
+                var areaTok = colItems.FirstOrDefault(t => t != numTok && AreaRegex.IsMatch(t.Text));
+
+                List<PdfTextToken> rowItems;
+                if (areaTok != null)
+                {
+                    rowItems = colItems;
+                }
+                else
+                {
+                    rowItems = tokens.Where(t => Math.Abs(t.Y - numTok.Y) <= 50 && Math.Abs(t.X - numTok.X) < 4000).ToList();
+                    areaTok = rowItems.FirstOrDefault(t => t != numTok && AreaRegex.IsMatch(t.Text));
+                }
 
                 if (areaTok == null) continue;
-                if (seenNumbers.Contains(numTok.Text)) continue;
-                seenNumbers.Add(numTok.Text);
-
                 double areaVal = ParseDouble(areaTok.Text.Replace(',', '.'), 0);
 
-                // Собираем наименование помещения (может состоять из 1 или 2 строк)
                 var nameParts = rowItems
-                    .Where(t => (numTok.Y - t.Y) >= 200 && (numTok.Y - t.Y) < 2000 && !AreaRegex.IsMatch(t.Text))
-                    .OrderByDescending(t => t.X)
+                    .Where(t => t != numTok && t != areaTok && t.Text.Length > 2 &&
+                                !AreaRegex.IsMatch(t.Text) &&
+                                !FireCatRegex.IsMatch(t.Text) &&
+                                !RoomPattern.IsMatch(t.Text) &&
+                                !JunkRegex.IsMatch(t.Text))
+                    .OrderByDescending(t => t.Y).ThenBy(t => t.X)
                     .Select(t => t.Text)
                     .ToList();
 
-                string roomName = nameParts.Any() ? string.Join(" ", nameParts) : $"Помещение {numTok.Text}";
+                if (!nameParts.Any()) continue;
+                string roomName = string.Join(" ", nameParts);
 
-                // Категория помещения (В1, В2, В3, В4, Д, -)
-                var catTok = rowItems.FirstOrDefault(t =>
-                    (numTok.Y - t.Y) > 3100 && (numTok.Y - t.Y) <= 4000 &&
-                    FireCatRegex.IsMatch(t.Text));
-                string fireCat = catTok != null ? catTok.Text : "-";
+                var catTok = rowItems.FirstOrDefault(t => FireCatRegex.IsMatch(t.Text));
+                string fireCat = catTok?.Text ?? "-";
 
-                // Координаты на плане этажа (пересчет из повернутой на 270° CAD-сетки в % экрана)
-                double boxX, boxY;
-                string source;
-                if (planRoomCoordinates.TryGetValue(numTok.Text, out var coords))
+                double boxX = 5, boxY = 5;
+                string source = $"Экспликация PDF (Кат. {fireCat})";
+                if (planCoords.TryGetValue(numTok.Text, out var pt))
                 {
-                    // Y в CAD идет слева направо от 38800 до 6200, X идет сверху вниз от 18200 до 6600
-                    boxX = Math.Clamp(((38800.0 - coords.Y) / 32600.0) * 88.0 + 3.0, 2.0, 88.0);
-                    boxY = Math.Clamp(((18200.0 - coords.X) / 11600.0) * 82.0 + 4.0, 3.0, 84.0);
+                    boxX = Math.Clamp(((pt.X - minX) / (maxX - minX)) * 100, 1, 94);
+                    boxY = Math.Clamp((1 - ((pt.Y - minY) / (maxY - minY))) * 100, 1, 94);
                     source = $"Экспликация PDF + План (Кат. {fireCat})";
                 }
                 else
                 {
-                    int col = orderIdx % 8;
-                    int row = orderIdx / 8;
-                    boxX = 4.0 + col * 11.5;
-                    boxY = 8.0 + row * 14.0;
-                    source = $"Экспликация PDF (Кат. {fireCat})";
+                    boxX = 4 + (orderIdx % 8) * 11.5;
+                    boxY = 10 + (orderIdx / 8) * 14.0;
                 }
                 orderIdx++;
 
                 string normCategory = InferSpCategory(roomName, fireCat);
-                double height = roomName.ToLower().Contains("автомобил") ? 3.6 : 3.3;
+                double height = (roomName.ToLower().Contains("автомобил") || numTok.Text.Contains("-02")) ? 3.6 : 3.3;
+                double volume = Math.Round(areaVal * height, 1);
 
                 rooms.Add(new Room
                 {
@@ -236,38 +231,38 @@ namespace HvacAutoCalculator.CADExtractor
                     NormalizedType = normCategory,
                     Area = Math.Round(areaVal, 2),
                     Height = height,
+                    RequiredSupplyAir = normCategory.Contains("Санузел") ? 0 : Math.Round(volume * 1.5, 0),
+                    RequiredExhaustAir = normCategory.Contains("Тамбур") ? 0 : Math.Round(volume * 1.5, 0),
                     BoxX = Math.Round(boxX, 1),
                     BoxY = Math.Round(boxY, 1),
-                    BoxWidth = areaVal > 500 ? 18.0 : 10.5,
-                    BoxHeight = areaVal > 500 ? 16.0 : 11.0,
+                    BoxWidth = areaVal > 100 ? 12 : 7.5,
+                    BoxHeight = areaVal > 100 ? 9 : 6.5,
                     DetectionSource = source
                 });
             }
 
-            return Task.FromResult<IEnumerable<Room>>(rooms);
+            return Task.FromResult<IEnumerable<Room>>(rooms.OrderBy(r => r.Number));
         }
 
         private static string InferSpCategory(string name, string fireCat)
         {
             string lower = name.ToLowerInvariant();
-            if (lower.Contains("автомобил") || lower.Contains("автостоянк")) return "Автостоянка";
-            if (lower.Contains("санузел") || lower.Contains("уборн")) return "Санузел";
-            if (lower.Contains("венткамера") || lower.Contains("холодильн") || lower.Contains("кондиционир")) return "Венткамера / ОВиК";
-            if (lower.Contains("электрощитов") || lower.Contains("ибп") || lower.Contains("дизель")) return "Электрощитовая / ДЭС";
-            if (lower.Contains("тамбур") || lower.Contains("лестничн") || lower.Contains("лифтов")) return "МОП / Тамбур-шлюз";
-            if (lower.Contains("кнс") || lower.Contains("насос")) return "Насосная / КНС";
-            if (lower.Contains("склад") || lower.Contains("инвентар") || lower.Contains("уборочн")) return $"Склад ({fireCat})";
+            if (lower.Contains("автомобил") || lower.Contains("машино")) return $"Автостоянка ({fireCat})";
+            if (lower.Contains("санузел") || lower.Contains("уборн") || lower.Contains("пуи")) return "Санузел";
+            if (lower.Contains("венткамера") || lower.Contains("холодильн") || lower.Contains("кондиционир")) return $"ОВиК ({fireCat})";
+            if (lower.Contains("электрощитов") || lower.Contains("ибп") || lower.Contains("дизель") || lower.Contains("сс") || lower.Contains("асо")) return $"ЭОМ / ДЭС ({fireCat})";
+            if (lower.Contains("тамбур") || lower.Contains("лестничн") || lower.Contains("лифтов") || lower.Contains("моп")) return "МОП / Тамбур-шлюз";
+            if (lower.Contains("склад") || lower.Contains("инвентар") || lower.Contains("мусор") || lower.Contains("кладов")) return $"Склад ({fireCat})";
             return $"Тех. помещение ({fireCat})";
         }
 
-        private static string DecodeCidHex(string hex, Dictionary<int, char>? cmap)
+        private static string DecodeCidHex(string hex, Dictionary<int, char> cmap)
         {
             var sb = new StringBuilder();
             for (int i = 0; i + 4 <= hex.Length; i += 4)
             {
                 int cid = Convert.ToInt32(hex.Substring(i, 4), 16);
-                if (cmap != null && cmap.TryGetValue(cid, out char ch))
-                    sb.Append(ch);
+                if (cmap.TryGetValue(cid, out char ch)) sb.Append(ch);
             }
             return sb.ToString();
         }
@@ -286,13 +281,9 @@ namespace HvacAutoCalculator.CADExtractor
             if (absEnd < 0) return string.Empty;
 
             int len = absEnd - absStart;
-            while (len > 0 && (allBytes[absStart + len - 1] == '\r' || allBytes[absStart + len - 1] == '\n'))
-                len--;
+            while (len > 0 && (allBytes[absStart + len - 1] == '\r' || allBytes[absStart + len - 1] == '\n')) len--;
 
-            if (!header.Contains("/FlateDecode"))
-            {
-                return Encoding.Latin1.GetString(allBytes, absStart, len);
-            }
+            if (!header.Contains("/FlateDecode")) return Encoding.Latin1.GetString(allBytes, absStart, len);
 
             try
             {
@@ -301,10 +292,7 @@ namespace HvacAutoCalculator.CADExtractor
                 using var sr = new StreamReader(zlib, Encoding.Latin1);
                 return sr.ReadToEnd();
             }
-            catch
-            {
-                return string.Empty;
-            }
+            catch { return string.Empty; }
         }
 
         private static double ParseDouble(string s, double fallback)
