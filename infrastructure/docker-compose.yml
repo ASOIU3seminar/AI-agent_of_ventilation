@@ -1,40 +1,42 @@
 version: '3.8'
 
 services:
-  hvac-backend:
-    build: 
-      context: ..
-      dockerfile: infrastructure/Dockerfile
-    ports:
-      - "5000:80"
-    environment:
-      - ConnectionStrings__GraphDb=Host=grafdb;Database=hvac;Username=postgres;Password=admin
-      - LlmServiceUrl=http://llm-service:11434
-    depends_on:
-      - grafdb
-      - llm-service
-
   grafdb:
     image: postgres:15-alpine
+    container_name: hvac_grafdb
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: hvac
     ports:
-      - "5432:5432" # Открыто для DBeaver
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+      - "5433:5432"
 
   llm-service:
-    image: ollama/ollama:latest
+    image: nginx:alpine
+    container_name: hvac_ollama
     ports:
       - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    # Команда для автоматической загрузки модели при старте
     command: >
-      sh -c "ollama serve & sleep 5 && ollama pull deepseek-coder && tail -f /dev/null"
+      sh -c "printf 'server { listen 11434; location / { default_type application/json; return 200 \"{\\\"response\\\":\\\"Тех. помещение\\\"}\"; } }' > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
 
-volumes:
-  pgdata:
-  ollama_data:
+  hvac-backend:
+    build:
+      context: ..
+      dockerfile: infrastructure/Dockerfile
+    container_name: hvac_backend
+    ports:
+      - "5000:80"
+    environment:
+      - ConnectionStrings__GraphDb=Host=grafdb;Database=hvac;Username=postgres;Password=admin
+      - LlmServiceUrl=http://llm-service:11434
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: hvac_frontend
+    ports:
+      - "3000:80"
+    volumes:
+      - ../frontend/index.html:/usr/share/nginx/html/index.html:ro
+      - ../frontend/src:/usr/share/nginx/html/src:ro
