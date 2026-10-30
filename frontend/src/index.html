@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ARGON HVAC AI — Разграничение комнат и расчет площадей по PDF</title>
+  <style>
+    :root {
+      --bg-dark: #040d1a;
+      --bg-panel: #0b192c;
+      --border: #1e3a5f;
+      --blue: #2563eb;
+      --emerald: #10b981;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: radial-gradient(circle at top right, #0a2e36 0%, var(--bg-dark) 55%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+    }
+    .sidebar {
+      width: 280px; background: rgba(11, 25, 44, 0.98);
+      border-right: 1px solid var(--border); display: flex; flex-direction: column;
+      justify-content: space-between; padding: 20px; flex-shrink: 0;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; padding-bottom: 18px; border-bottom: 1px solid var(--border); }
+    .brand-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--blue), var(--emerald));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 20px; color: #fff;
+    }
+    .brand-title {
+      font-size: 18px; font-weight: 800;
+      background: linear-gradient(90deg, #60a5fa, #34d399);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .topbar {
+      padding: 18px 28px; background: rgba(11, 25, 44, 0.85);
+      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .btn {
+      padding: 10px 18px; border-radius: 10px; font-size: 13px; font-weight: 700;
+      border: 1px solid var(--border); background: #10233d; color: #fff; cursor: pointer; transition: 0.2s;
+    }
+    .btn-primary { background: linear-gradient(135deg, var(--blue), var(--emerald)); border: none; }
+    .content { padding: 28px; flex: 1; }
+    .panel { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div>
+      <div class="brand">
+        <div class="brand-icon">AI</div>
+        <div>
+          <div class="brand-title">ARGON PLAN AI</div>
+          <div style="font-size:11px; color:var(--muted);">Сине-зеленый SaaS v2.4</div>
+        </div>
+      </div>
+      <div style="margin-top:24px; color:var(--muted); font-size:14px; line-height:1.6;">
+        Система разграничения комнат по PDF-плану этажа, автоматического подсчета площадей $S$ ($м^2$) и сведения воздухообмена по СП 60.13330.
+      </div>
+    </div>
+    <div style="padding:12px; background:#06101e; border-radius:10px; font-size:12px; color:#34d399;">
+      🟢 Ядро .NET 8 и БД подключены
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <h2 style="font-size:18px; font-weight:800;">Панель управления ИИ-Агента вентиляции</h2>
+        <div style="font-size:12px; color:var(--muted);">Готовы к разметке PDF-планов и выгрузке отчетов по ГОСТ 21.602</div>
+      </div>
+      <button class="btn btn-primary" onclick="alert('Агент инициализирован. Загрузите PDF-план!')">⚡ Начать работу</button>
+    </header>
+
+    <div class="content">
+      <div class="panel" style="max-width:700px; margin: 0 auto; text-align:center;">
+        <h3 style="margin-bottom:12px; color:#34d399;">📂 Загрузка архитектурного плана этажа (.PDF)</h3>
+        <p style="color:var(--muted); font-size:13px; margin-bottom:20px;">
+          Перетащите PDF-файл этажа. ИИ автоматически выделит контуры помещений, посчитает площади и сформирует ведомость.
+        </p>
+        <input type="file" id="pdfFile" accept=".pdf" style="margin-bottom:16px; color:#fff;" />
+        <br />
+        <button class="btn btn-primary" onclick="runAnalysis()">Запустить разметку комнат</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function runAnalysis() {
+      const fileInput = document.getElementById('pdfFile');
+      if (!fileInput.files[0]) {
+        alert('Пожалуйста, выберите PDF-файл!');
+        return;
+      }
+      alert('Файл «' + fileInput.files[0].name + '» успешно принят в обработку ИИ-агентом!');
+    }
+  </script>
+</body>
+</html>

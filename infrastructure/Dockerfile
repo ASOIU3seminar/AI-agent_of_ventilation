@@ -1,18 +1,11 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM bb63eea78d43
 WORKDIR /src
 
-COPY ["hvac-auto-calculator.sln", "./"]
-COPY ["src/Domain/Domain.csproj", "src/Domain/"]
-COPY ["src/CADExtractor/CADExtractor.csproj", "src/CADExtractor/"]
-COPY ["src/DataMapper/DataMapper.csproj", "src/DataMapper/"]
-COPY ["src/HVACCalculator/HVACCalculator.csproj", "src/HVACCalculator/"]
-COPY ["src/ExcelGenerator/ExcelGenerator.csproj", "src/ExcelGenerator/"]
-RUN dotnet restore
+RUN printf '<?xml version="1.0" encoding="utf-8"?>\n<configuration>\n  <packageSources>\n    <clear />\n    <add key="offline" value="/root/.nuget/packages" />\n  </packageSources>\n</configuration>\n' > /src/NuGet.Config
 
-COPY . .
-RUN dotnet publish "src/HVACCalculator/HVACCalculator.csproj" -c Release -o /app/publish
+COPY src/ ./src/
+RUN dotnet publish "src/HVACCalculator/HVACCalculator.csproj" -c Release -o /app/publish --configfile /src/NuGet.Config
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
-WORKDIR /app
-COPY --from=build /app/publish .
+WORKDIR /app/publish
+EXPOSE 80
 ENTRYPOINT ["dotnet", "HVACCalculator.dll"]

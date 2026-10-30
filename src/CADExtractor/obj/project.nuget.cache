@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "dgSpecHash": "+xFnek7ckPw=",
+  "success": true,
+  "projectFilePath": "/home/roman/AI-agent_of_ventilation/src/CADExtractor/CADExtractor.csproj",
+  "expectedPackageFiles": [
+    "/home/roman/.nuget/packages/microsoft.netcore.platforms/2.0.0/microsoft.netcore.platforms.2.0.0.nupkg.sha512",
+    "/home/roman/.nuget/packages/microsoft.win32.systemevents/4.5.0/microsoft.win32.systemevents.4.5.0.nupkg.sha512",
+    "/home/roman/.nuget/packages/netdxf.netstandard/2.4.0/netdxf.netstandard.2.4.0.nupkg.sha512",
+    "/home/roman/.nuget/packages/system.drawing.common/4.5.0/system.drawing.common.4.5.0.nupkg.sha512"
+  ],
+  "logs": []
+}

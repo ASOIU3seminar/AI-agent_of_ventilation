@@ -1,0 +1,55 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{FEF67ED6-1DC6-4314-9D6F-245132D190DB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Domain", "src\Domain\Domain.csproj", "{161E6081-31FC-4219-A3B0-38FB43D45AC9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CADExtractor", "src\CADExtractor\CADExtractor.csproj", "{E9D82511-D899-40B0-9449-F347F6A7FDD6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataMapper", "src\DataMapper\DataMapper.csproj", "{1413F3EB-9385-471C-A914-4495B024A798}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExcelGenerator", "src\ExcelGenerator\ExcelGenerator.csproj", "{1A3516D5-8520-41D9-8888-FF7331466312}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HVACCalculator", "src\HVACCalculator\HVACCalculator.csproj", "{1BAD7E7F-BFC1-4FDE-A303-D5825B5E5659}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{161E6081-31FC-4219-A3B0-38FB43D45AC9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{161E6081-31FC-4219-A3B0-38FB43D45AC9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{161E6081-31FC-4219-A3B0-38FB43D45AC9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{161E6081-31FC-4219-A3B0-38FB43D45AC9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E9D82511-D899-40B0-9449-F347F6A7FDD6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E9D82511-D899-40B0-9449-F347F6A7FDD6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E9D82511-D899-40B0-9449-F347F6A7FDD6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E9D82511-D899-40B0-9449-F347F6A7FDD6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1413F3EB-9385-471C-A914-4495B024A798}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1413F3EB-9385-471C-A914-4495B024A798}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1413F3EB-9385-471C-A914-4495B024A798}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1413F3EB-9385-471C-A914-4495B024A798}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1A3516D5-8520-41D9-8888-FF7331466312}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A3516D5-8520-41D9-8888-FF7331466312}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A3516D5-8520-41D9-8888-FF7331466312}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A3516D5-8520-41D9-8888-FF7331466312}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1BAD7E7F-BFC1-4FDE-A303-D5825B5E5659}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1BAD7E7F-BFC1-4FDE-A303-D5825B5E5659}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1BAD7E7F-BFC1-4FDE-A303-D5825B5E5659}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1BAD7E7F-BFC1-4FDE-A303-D5825B5E5659}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{161E6081-31FC-4219-A3B0-38FB43D45AC9} = {FEF67ED6-1DC6-4314-9D6F-245132D190DB}
+		{E9D82511-D899-40B0-9449-F347F6A7FDD6} = {FEF67ED6-1DC6-4314-9D6F-245132D190DB}
+		{1413F3EB-9385-471C-A914-4495B024A798} = {FEF67ED6-1DC6-4314-9D6F-245132D190DB}
+		{1A3516D5-8520-41D9-8888-FF7331466312} = {FEF67ED6-1DC6-4314-9D6F-245132D190DB}
+		{1BAD7E7F-BFC1-4FDE-A303-D5825B5E5659} = {FEF67ED6-1DC6-4314-9D6F-245132D190DB}
+	EndGlobalSection
+EndGlobal

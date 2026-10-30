@@ -1,0 +1,354 @@
+{
+  "format": 1,
+  "restore": {
+    "/home/roman/AI-agent_of_ventilation/src/HVACCalculator/HVACCalculator.csproj": {}
+  },
+  "projects": {
+    "/home/roman/AI-agent_of_ventilation/src/CADExtractor/CADExtractor.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/home/roman/AI-agent_of_ventilation/src/CADExtractor/CADExtractor.csproj",
+        "projectName": "CADExtractor",
+        "projectPath": "/home/roman/AI-agent_of_ventilation/src/CADExtractor/CADExtractor.csproj",
+        "packagesPath": "/home/roman/.nuget/packages/",
+        "outputPath": "/home/roman/AI-agent_of_ventilation/src/CADExtractor/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/roman/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "/home/roman/.nuget/packages": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "/home/roman/AI-agent_of_ventilation/src/Domain/Domain.csproj": {
+                "projectPath": "/home/roman/AI-agent_of_ventilation/src/Domain/Domain.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "netDxf.netstandard": {
+              "target": "Package",
+              "version": "[2.4.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/8.0.421/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/home/roman/AI-agent_of_ventilation/src/DataMapper/DataMapper.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/home/roman/AI-agent_of_ventilation/src/DataMapper/DataMapper.csproj",
+        "projectName": "DataMapper",
+        "projectPath": "/home/roman/AI-agent_of_ventilation/src/DataMapper/DataMapper.csproj",
+        "packagesPath": "/home/roman/.nuget/packages/",
+        "outputPath": "/home/roman/AI-agent_of_ventilation/src/DataMapper/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/roman/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "/home/roman/.nuget/packages": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "/home/roman/AI-agent_of_ventilation/src/Domain/Domain.csproj": {
+                "projectPath": "/home/roman/AI-agent_of_ventilation/src/Domain/Domain.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "ClosedXML": {
+              "target": "Package",
+              "version": "[0.102.1, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/8.0.421/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/home/roman/AI-agent_of_ventilation/src/Domain/Domain.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/home/roman/AI-agent_of_ventilation/src/Domain/Domain.csproj",
+        "projectName": "Domain",
+        "projectPath": "/home/roman/AI-agent_of_ventilation/src/Domain/Domain.csproj",
+        "packagesPath": "/home/roman/.nuget/packages/",
+        "outputPath": "/home/roman/AI-agent_of_ventilation/src/Domain/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/roman/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "/home/roman/.nuget/packages": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/8.0.421/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/home/roman/AI-agent_of_ventilation/src/ExcelGenerator/ExcelGenerator.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/home/roman/AI-agent_of_ventilation/src/ExcelGenerator/ExcelGenerator.csproj",
+        "projectName": "ExcelGenerator",
+        "projectPath": "/home/roman/AI-agent_of_ventilation/src/ExcelGenerator/ExcelGenerator.csproj",
+        "packagesPath": "/home/roman/.nuget/packages/",
+        "outputPath": "/home/roman/AI-agent_of_ventilation/src/ExcelGenerator/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/roman/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "/home/roman/.nuget/packages": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "/home/roman/AI-agent_of_ventilation/src/Domain/Domain.csproj": {
+                "projectPath": "/home/roman/AI-agent_of_ventilation/src/Domain/Domain.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "ClosedXML": {
+              "target": "Package",
+              "version": "[0.102.1, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/8.0.421/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/home/roman/AI-agent_of_ventilation/src/HVACCalculator/HVACCalculator.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/home/roman/AI-agent_of_ventilation/src/HVACCalculator/HVACCalculator.csproj",
+        "projectName": "HVACCalculator",
+        "projectPath": "/home/roman/AI-agent_of_ventilation/src/HVACCalculator/HVACCalculator.csproj",
+        "packagesPath": "/home/roman/.nuget/packages/",
+        "outputPath": "/home/roman/AI-agent_of_ventilation/src/HVACCalculator/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/roman/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "/home/roman/.nuget/packages": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "/home/roman/AI-agent_of_ventilation/src/CADExtractor/CADExtractor.csproj": {
+                "projectPath": "/home/roman/AI-agent_of_ventilation/src/CADExtractor/CADExtractor.csproj"
+              },
+              "/home/roman/AI-agent_of_ventilation/src/DataMapper/DataMapper.csproj": {
+                "projectPath": "/home/roman/AI-agent_of_ventilation/src/DataMapper/DataMapper.csproj"
+              },
+              "/home/roman/AI-agent_of_ventilation/src/Domain/Domain.csproj": {
+                "projectPath": "/home/roman/AI-agent_of_ventilation/src/Domain/Domain.csproj"
+              },
+              "/home/roman/AI-agent_of_ventilation/src/ExcelGenerator/ExcelGenerator.csproj": {
+                "projectPath": "/home/roman/AI-agent_of_ventilation/src/ExcelGenerator/ExcelGenerator.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.EntityFrameworkCore": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            },
+            "Npgsql.EntityFrameworkCore.PostgreSQL": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.AspNetCore.App": {
+              "privateAssets": "none"
+            },
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/8.0.421/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}
