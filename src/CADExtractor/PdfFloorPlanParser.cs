@@ -24,11 +24,10 @@ namespace HvacAutoCalculator.CADExtractor
         private static readonly Regex HexTjRegex = new(@"<([0-9a-fA-F]+)>\s*Tj", RegexOptions.Compiled);
         private static readonly Regex LiteralTjRegex = new(@"\(([^\(\)\\]+)\)\s*Tj", RegexOptions.Compiled);
 
-        // Паттерны для классификации токенов
         private static readonly Regex RoomPattern = new(@"^(-?[0-9]{1,2}\.[0-9]{2}[а-яА-Яa-zA-Z]?|-[0-9]{2}\.[A-Za-zА-Яа-я0-9]{2}\.[0-9]{1,3}|[0-9]{1,2}\.[A-Za-z0-9]+\.[0-9]{1,3})$", RegexOptions.Compiled);
         private static readonly Regex CompositeBasePattern = new(@"^-?[0-9]{1,2}\.[0-9]{2}$", RegexOptions.Compiled);
         private static readonly Regex CompositeSuffixPattern = new(@"^[а-яА-Яa-zA-Z]$", RegexOptions.Compiled);
-        
+
         private static readonly Regex AreaRegex = new(@"^[0-9]{1,5}[\.,][0-9]{2}$", RegexOptions.Compiled);
         private static readonly Regex FireCatRegex = new(@"^(В[1-4]|Д|А|Б|Г|-)$", RegexOptions.Compiled);
         private static readonly Regex JunkRegex = new(@"^([-+]?\d+([.,]\d+)?|\d+:\d+)$", RegexOptions.Compiled);
@@ -137,8 +136,8 @@ namespace HvacAutoCalculator.CADExtractor
 
             foreach (var rt in allRoomTokens)
             {
-                bool isTable = tokens.Any(t => t != rt && AreaRegex.IsMatch(t.Text) && 
-                    ((Math.Abs(t.X - rt.X) < 50 && Math.Abs(t.Y - rt.Y) < 4000) || 
+                bool isTable = tokens.Any(t => t != rt && AreaRegex.IsMatch(t.Text) &&
+                    ((Math.Abs(t.X - rt.X) < 50 && Math.Abs(t.Y - rt.Y) < 4000) ||
                      (Math.Abs(t.Y - rt.Y) < 50 && Math.Abs(t.X - rt.X) < 4000)));
 
                 if (isTable)
@@ -156,9 +155,9 @@ namespace HvacAutoCalculator.CADExtractor
                 if (pt.Y > maxY) maxY = pt.Y;
             }
             if (minX > maxX) { minX = 0; maxX = 30000; minY = 0; maxY = 40000; }
-            
-            double padX = (maxX - minX) * 0.1; if (padX == 0) padX = 1000;
-            double padY = (maxY - minY) * 0.1; if (padY == 0) padY = 1000;
+
+            double padX = (maxX - minX) * 0.05; if (padX == 0) padX = 1000;
+            double padY = (maxY - minY) * 0.05; if (padY == 0) padY = 1000;
             minX -= padX; maxX += padX; minY -= padY; maxY += padY;
 
             var rooms = new List<Room>();
@@ -203,24 +202,21 @@ namespace HvacAutoCalculator.CADExtractor
                 var catTok = rowItems.FirstOrDefault(t => FireCatRegex.IsMatch(t.Text));
                 string fireCat = catTok?.Text ?? "-";
 
-                double boxX = 5, boxY = 5;
+                double cadX = 2000 + (orderIdx % 8) * 3200;
+                double cadY = 35000 - (orderIdx / 8) * 3800;
+                double boxX = 4 + (orderIdx % 8) * 11.5;
+                double boxY = 10 + (orderIdx / 8) * 14.0;
                 string source = $"Экспликация PDF (Кат. {fireCat})";
+
                 if (planCoords.TryGetValue(numTok.Text, out var pt))
                 {
-                    boxX = Math.Clamp(((pt.X - minX) / (maxX - minX)) * 100, 1, 94);
-                    boxY = Math.Clamp((1 - ((pt.Y - minY) / (maxY - minY))) * 100, 1, 94);
+                    cadX = pt.X;
+                    cadY = pt.Y;
+                    boxX = Math.Clamp(((pt.X - minX) / (maxX - minX)) * 100, 2, 92);
+                    boxY = Math.Clamp((1.0 - ((pt.Y - minY) / (maxY - minY))) * 100, 2, 92);
                     source = $"Экспликация PDF + План (Кат. {fireCat})";
                 }
-                else
-                {
-                    boxX = 4 + (orderIdx % 8) * 11.5;
-                    boxY = 10 + (orderIdx / 8) * 14.0;
-                }
                 orderIdx++;
-
-                string normCategory = InferSpCategory(roomName, fireCat);
-                double height = (roomName.ToLower().Contains("автомобил") || numTok.Text.Contains("-02")) ? 3.6 : 3.3;
-                double volume = Math.Round(areaVal * height, 1);
 
                 rooms.Add(new Room
                 {
@@ -228,32 +224,20 @@ namespace HvacAutoCalculator.CADExtractor
                     CadId = $"EXP-{orderIdx}",
                     Number = numTok.Text,
                     RawName = roomName,
-                    NormalizedType = normCategory,
+                    FireCategory = fireCat,
                     Area = Math.Round(areaVal, 2),
-                    Height = height,
-                    RequiredSupplyAir = normCategory.Contains("Санузел") ? 0 : Math.Round(volume * 1.5, 0),
-                    RequiredExhaustAir = normCategory.Contains("Тамбур") ? 0 : Math.Round(volume * 1.5, 0),
+                    Height = 3.3,
+                    CadX = Math.Round(cadX, 1),
+                    CadY = Math.Round(cadY, 1),
                     BoxX = Math.Round(boxX, 1),
                     BoxY = Math.Round(boxY, 1),
-                    BoxWidth = areaVal > 100 ? 12 : 7.5,
-                    BoxHeight = areaVal > 100 ? 9 : 6.5,
+                    BoxWidth = areaVal > 100 ? 11.0 : 7.5,
+                    BoxHeight = areaVal > 100 ? 8.5 : 6.0,
                     DetectionSource = source
                 });
             }
 
             return Task.FromResult<IEnumerable<Room>>(rooms.OrderBy(r => r.Number));
-        }
-
-        private static string InferSpCategory(string name, string fireCat)
-        {
-            string lower = name.ToLowerInvariant();
-            if (lower.Contains("автомобил") || lower.Contains("машино")) return $"Автостоянка ({fireCat})";
-            if (lower.Contains("санузел") || lower.Contains("уборн") || lower.Contains("пуи")) return "Санузел";
-            if (lower.Contains("венткамера") || lower.Contains("холодильн") || lower.Contains("кондиционир")) return $"ОВиК ({fireCat})";
-            if (lower.Contains("электрощитов") || lower.Contains("ибп") || lower.Contains("дизель") || lower.Contains("сс") || lower.Contains("асо")) return $"ЭОМ / ДЭС ({fireCat})";
-            if (lower.Contains("тамбур") || lower.Contains("лестничн") || lower.Contains("лифтов") || lower.Contains("моп")) return "МОП / Тамбур-шлюз";
-            if (lower.Contains("склад") || lower.Contains("инвентар") || lower.Contains("мусор") || lower.Contains("кладов")) return $"Склад ({fireCat})";
-            return $"Тех. помещение ({fireCat})";
         }
 
         private static string DecodeCidHex(string hex, Dictionary<int, char> cmap)

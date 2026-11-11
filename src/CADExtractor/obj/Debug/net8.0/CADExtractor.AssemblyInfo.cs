@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CADExtractor")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+68ceb202c796dbfde4976361873b968f57d03087")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c36fe324034dc844a760ea02b9d69562b2ea8d4d")]
 [assembly: System.Reflection.AssemblyProductAttribute("CADExtractor")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CADExtractor")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
