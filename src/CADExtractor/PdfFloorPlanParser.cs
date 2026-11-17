@@ -25,12 +25,14 @@ namespace HvacAutoCalculator.CADExtractor
         private static readonly Regex LiteralTjRegex = new(@"\(([^\(\)\\]+)\)\s*Tj", RegexOptions.Compiled);
 
         private static readonly Regex RoomPattern = new(@"^(-?[0-9]{1,2}\.[0-9]{2}[а-яА-Яa-zA-Z]?|-[0-9]{2}\.[A-Za-zА-Яа-я0-9]{2}\.[0-9]{1,3}|[0-9]{1,2}\.[A-Za-z0-9]+\.[0-9]{1,3})$", RegexOptions.Compiled);
+        private static readonly Regex DateRegex = new(@"^\d{2}\.\d{2}\.\d{2,4}$", RegexOptions.Compiled);
+        private static readonly Regex CodeRegex = new(@"^\d+\.\d+\.\d+$", RegexOptions.Compiled);
         private static readonly Regex CompositeBasePattern = new(@"^-?[0-9]{1,2}\.[0-9]{2}$", RegexOptions.Compiled);
         private static readonly Regex CompositeSuffixPattern = new(@"^[а-яА-Яa-zA-Z]$", RegexOptions.Compiled);
 
         private static readonly Regex AreaRegex = new(@"^[0-9]{1,5}[\.,][0-9]{2}$", RegexOptions.Compiled);
         private static readonly Regex FireCatRegex = new(@"^(В[1-4]|Д|А|Б|Г|-)$", RegexOptions.Compiled);
-        private static readonly Regex JunkRegex = new(@"^([-+]?\d+([.,]\d+)?|\d+:\d+)$", RegexOptions.Compiled);
+        private static readonly Regex JunkRegex = new(@"^([-+]?\d+([.,]\d+)?|\d+:\d+|\d{2}\.\d{2}\.\d{2,4}|\d+\.\d+\.\d+)$", RegexOptions.Compiled);
 
         private class PdfTextToken
         {
@@ -89,87 +91,131 @@ namespace HvacAutoCalculator.CADExtractor
                 if (string.IsNullOrEmpty(streamText) || (!streamText.Contains("Tj") && !streamText.Contains("TJ"))) continue;
 
                 string curFont = "F1";
-                double curX = 0, curY = 0;
+                double curX = 0;
+                double curY = 0;
 
-                foreach (var line in streamText.Split('\n'))
+                using var sr = new StringReader(streamText);
+                string? line;
+                while ((line = sr.ReadLine()) != null)
                 {
-                    var tf = TfRegex.Match(line);
-                    if (tf.Success) curFont = tf.Groups[1].Value;
+                    var tfM = TfRegex.Match(line);
+                    if (tfM.Success) curFont = tfM.Groups[1].Value;
 
-                    var tm = TmRegex.Match(line);
-                    if (tm.Success)
+                    var tmM = TmRegex.Match(line);
+                    if (tmM.Success)
                     {
-                        curX = ParseDouble(tm.Groups[5].Value, curX);
-                        curY = ParseDouble(tm.Groups[6].Value, curY);
+                        curX = ParseDouble(tmM.Groups[5].Value, curX);
+                        curY = ParseDouble(tmM.Groups[6].Value, curY);
                     }
 
-                    var hexTj = HexTjRegex.Match(line);
-                    if (hexTj.Success)
+                    var hexM = HexTjRegex.Match(line);
+                    if (hexM.Success)
                     {
-                        string decoded = DecodeCidHex(hexTj.Groups[1].Value, fontCmaps.GetValueOrDefault(curFont, new Dictionary<int, char>()));
+                        string decoded = fontCmaps.TryGetValue(curFont, out var cmap)
+                            ? DecodeCidHex(hexM.Groups[1].Value, cmap)
+                            : string.Empty;
                         if (!string.IsNullOrWhiteSpace(decoded))
+                        {
                             tokens.Add(new PdfTextToken { X = curX, Y = curY, Font = curFont, Text = decoded.Trim() });
+                        }
                     }
                     else
                     {
-                        var litTj = LiteralTjRegex.Match(line);
-                        if (litTj.Success && !string.IsNullOrWhiteSpace(litTj.Groups[1].Value))
-                            tokens.Add(new PdfTextToken { X = curX, Y = curY, Font = curFont, Text = litTj.Groups[1].Value.Trim() });
+                        var litM = LiteralTjRegex.Match(line);
+                        if (litM.Success && !string.IsNullOrWhiteSpace(litM.Groups[1].Value))
+                        {
+                            tokens.Add(new PdfTextToken { X = curX, Y = curY, Font = curFont, Text = litM.Groups[1].Value.Trim() });
+                        }
                     }
                 }
             }
 
-            foreach (var t in tokens.Where(x => CompositeBasePattern.IsMatch(x.Text)))
+            // Определение высоты этажа из чертежа (без вычитания плиты)
+            double floorHeight = 3.6;
+            var otmToken = tokens.FirstOrDefault(t => t.Text.Contains("-18,600") || t.Text.Contains("-18.600"));
+            if (otmToken != null) floorHeight = 3.6;
+            else if (tokens.Any(t => t.Text.Contains("-15,000") || t.Text.Contains("-15.000"))) floorHeight = 3.6;
+            else if (tokens.Any(t => t.Text.Contains("-11,400") || t.Text.Contains("-11.400"))) floorHeight = 3.6;
+            else if (tokens.Any(t => t.Text.Contains("-8,100") || t.Text.Contains("-8.100"))) floorHeight = 3.3;
+            else if (tokens.Any(t => t.Text.Contains("-4,800") || t.Text.Contains("-4.800"))) floorHeight = 3.3;
+
+            // Сборка составных номеров
+            var compositeBases = tokens.Where(t => CompositeBasePattern.IsMatch(t.Text) && !DateRegex.IsMatch(t.Text)).ToList();
+            var mergedRoomTokens = new List<PdfTextToken>();
+            var usedSuffixes = new HashSet<PdfTextToken>();
+
+            foreach (var b in compositeBases)
             {
-                var suffix = tokens.FirstOrDefault(o => o != t && Math.Abs(o.X - t.X) < 50 && (t.Y - o.Y) > 20 && (t.Y - o.Y) < 300 && CompositeSuffixPattern.IsMatch(o.Text));
+                var suffix = tokens.FirstOrDefault(t =>
+                    !usedSuffixes.Contains(t) &&
+                    CompositeSuffixPattern.IsMatch(t.Text) &&
+                    Math.Abs(t.Y - b.Y) <= 8 &&
+                    (t.X - b.X) > 0 && (t.X - b.X) <= 60);
+
                 if (suffix != null)
                 {
-                    t.Text += suffix.Text;
-                    suffix.Text = "";
+                    usedSuffixes.Add(suffix);
+                    mergedRoomTokens.Add(new PdfTextToken
+                    {
+                        X = b.X,
+                        Y = b.Y,
+                        Font = b.Font,
+                        Text = b.Text + suffix.Text
+                    });
+                }
+                else
+                {
+                    mergedRoomTokens.Add(b);
                 }
             }
-            tokens.RemoveAll(t => string.IsNullOrWhiteSpace(t.Text));
 
-            var allRoomTokens = tokens.Where(t => RoomPattern.IsMatch(t.Text)).ToList();
-            var planCoords = new Dictionary<string, PdfTextToken>(StringComparer.OrdinalIgnoreCase);
-            var explicationCandidates = new List<PdfTextToken>();
+            var singleTokens = tokens.Where(t =>
+                RoomPattern.IsMatch(t.Text) &&
+                !CompositeBasePattern.IsMatch(t.Text) &&
+                !DateRegex.IsMatch(t.Text) &&
+                !CodeRegex.IsMatch(t.Text) &&
+                !usedSuffixes.Contains(t));
+
+            var allRoomTokens = mergedRoomTokens.Concat(singleTokens).ToList();
+
+            var planCoords = new Dictionary<string, PdfTextToken>();
+            var expCandidates = new List<PdfTextToken>();
 
             foreach (var rt in allRoomTokens)
             {
-                bool isTable = tokens.Any(t => t != rt && AreaRegex.IsMatch(t.Text) &&
-                    ((Math.Abs(t.X - rt.X) < 50 && Math.Abs(t.Y - rt.Y) < 4000) ||
-                     (Math.Abs(t.Y - rt.Y) < 50 && Math.Abs(t.X - rt.X) < 4000)));
+                bool hasNearbyArea = tokens.Any(t =>
+                    t != rt &&
+                    AreaRegex.IsMatch(t.Text) &&
+                    ((Math.Abs(t.X - rt.X) <= 85 && Math.Abs(t.Y - rt.Y) < 4200) ||
+                     (Math.Abs(t.Y - rt.Y) <= 85 && Math.Abs(t.X - rt.X) < 4200)));
 
-                if (isTable)
-                    explicationCandidates.Add(rt);
-                else
+                if (hasNearbyArea)
+                {
+                    expCandidates.Add(rt);
+                }
+                else if (!planCoords.ContainsKey(rt.Text))
+                {
                     planCoords[rt.Text] = rt;
+                }
             }
 
-            double minX = 999999, maxX = -999999, minY = 999999, maxY = -999999;
-            foreach (var pt in planCoords.Values)
-            {
-                if (pt.X < minX) minX = pt.X;
-                if (pt.X > maxX) maxX = pt.X;
-                if (pt.Y < minY) minY = pt.Y;
-                if (pt.Y > maxY) maxY = pt.Y;
-            }
-            if (minX > maxX) { minX = 0; maxX = 30000; minY = 0; maxY = 40000; }
-
-            double padX = (maxX - minX) * 0.05; if (padX == 0) padX = 1000;
-            double padY = (maxY - minY) * 0.05; if (padY == 0) padY = 1000;
-            minX -= padX; maxX += padX; minY -= padY; maxY += padY;
+            double minX = planCoords.Values.Any() ? planCoords.Values.Min(p => p.X) : 0;
+            double maxX = planCoords.Values.Any() ? planCoords.Values.Max(p => p.X) : 1000;
+            double minY = planCoords.Values.Any() ? planCoords.Values.Min(p => p.Y) : 0;
+            double maxY = planCoords.Values.Any() ? planCoords.Values.Max(p => p.Y) : 1000;
+            if (Math.Abs(maxX - minX) < 1) maxX = minX + 1000;
+            if (Math.Abs(maxY - minY) < 1) maxY = minY + 1000;
 
             var rooms = new List<Room>();
-            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            explicationCandidates = explicationCandidates.OrderByDescending(t => t.Y).ThenBy(t => t.X).ToList();
+            var seen = new HashSet<string>();
             int orderIdx = 0;
 
-            foreach (var numTok in explicationCandidates)
+            foreach (var numTok in expCandidates)
             {
-                if (!seen.Add(numTok.Text)) continue;
+                if (seen.Contains(numTok.Text)) continue;
+                seen.Add(numTok.Text);
 
-                var colItems = tokens.Where(t => Math.Abs(t.X - numTok.X) <= 50 && Math.Abs(t.Y - numTok.Y) < 4000).ToList();
+                var colItems = tokens.Where(t => Math.Abs(t.X - numTok.X) <= 85 && Math.Abs(t.Y - numTok.Y) < 4200).ToList();
                 var areaTok = colItems.FirstOrDefault(t => t != numTok && AreaRegex.IsMatch(t.Text));
 
                 List<PdfTextToken> rowItems;
@@ -179,7 +225,7 @@ namespace HvacAutoCalculator.CADExtractor
                 }
                 else
                 {
-                    rowItems = tokens.Where(t => Math.Abs(t.Y - numTok.Y) <= 50 && Math.Abs(t.X - numTok.X) < 4000).ToList();
+                    rowItems = tokens.Where(t => Math.Abs(t.Y - numTok.Y) <= 85 && Math.Abs(t.X - numTok.X) < 4200).ToList();
                     areaTok = rowItems.FirstOrDefault(t => t != numTok && AreaRegex.IsMatch(t.Text));
                 }
 
@@ -226,7 +272,7 @@ namespace HvacAutoCalculator.CADExtractor
                     RawName = roomName,
                     FireCategory = fireCat,
                     Area = Math.Round(areaVal, 2),
-                    Height = 3.3,
+                    Height = floorHeight,
                     CadX = Math.Round(cadX, 1),
                     CadY = Math.Round(cadY, 1),
                     BoxX = Math.Round(boxX, 1),

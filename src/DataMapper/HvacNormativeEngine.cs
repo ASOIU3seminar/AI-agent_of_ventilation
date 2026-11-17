@@ -31,8 +31,10 @@ namespace HvacAutoCalculator.DataMapper
                 room.NormalizedType = $"Автостоянка ({room.FireCategory})";
                 room.NormCode = "СП 60.13330.2020 / СП 113.13330";
                 room.NormCitation = "Компенсационный приток K=4.0 1/ч, вытяжка по ПДК CO K=5.0 1/ч (дисбаланс -20%)";
+                room.CalculationMethod = "Кратность (Kпр=4.0, Kвыт=5.0)";
                 room.RequiredSupplyAir = Math.Round(vol * 4.0, 0);
                 room.RequiredExhaustAir = Math.Round(vol * 5.0, 0);
+                room.CalculationFormula = $"Lпр = 4.0 × {vol} = {room.RequiredSupplyAir} м³/ч; Lвыт = 5.0 × {vol} = {room.RequiredExhaustAir} м³/ч";
                 room.SystemTag = "П-Паркинг / В-Паркинг";
                 return;
             }
@@ -43,8 +45,10 @@ namespace HvacAutoCalculator.DataMapper
                 room.NormalizedType = "ПУИ / Уборочный инвентарь";
                 room.NormCode = "СП 118.13330.2022 п. 7.2";
                 room.NormCitation = "Вытяжка L = 5*V, но не менее 100 м3/ч; приток перетоком";
+                room.CalculationMethod = "По кратности K=5.0 (min 100 м³/ч)";
                 room.RequiredSupplyAir = 0;
                 room.RequiredExhaustAir = Math.Max(100, Math.Round(vol * 5.0, 0));
+                room.CalculationFormula = $"Lвыт = max(100, 5.0 × {vol}) = {room.RequiredExhaustAir} м³/ч; Lпр = 0 (переток)";
                 room.SystemTag = "ВЕ-С/У";
                 return;
             }
@@ -55,8 +59,10 @@ namespace HvacAutoCalculator.DataMapper
                 room.NormalizedType = "Санузел";
                 room.NormCode = "СП 118.13330.2022 / СП 54.13330";
                 room.NormCitation = "Фиксированная вытяжка 50–75 м3/ч на прибор, приток перетоком (разряжение)";
+                room.CalculationMethod = "Санитарная норма (min 75 м³/ч)";
                 room.RequiredSupplyAir = 0;
                 room.RequiredExhaustAir = Math.Max(75, Math.Round(vol * 5.0, 0));
+                room.CalculationFormula = $"Lвыт = max(75, 5.0 × {vol}) = {room.RequiredExhaustAir} м³/ч; Lпр = 0 (переток)";
                 room.SystemTag = "ВЕ-С/У";
                 return;
             }
@@ -65,10 +71,12 @@ namespace HvacAutoCalculator.DataMapper
             if (lower.Contains("электрощитов") || lower.Contains("ибп") || lower.Contains("асо") || lower.Contains("коммуникаций ит") || lower.Contains("сс"))
             {
                 room.NormalizedType = $"Электрощитовая / СС ({room.FireCategory})";
-                room.NormCode = "СП 60.13330.2020";
+                room.NormCode = "СП 60.13330.2020 / ПУЭ";
                 room.NormCitation = "Ассимиляция теплоизбытков: вытяжка K=1.0 1/ч, приток не требуется (L_пр=0)";
+                room.CalculationMethod = "Ассимиляция теплоизбытков (K=1.0)";
                 room.RequiredSupplyAir = 0;
                 room.RequiredExhaustAir = Math.Max(30, Math.Round(vol * 1.0, 0));
+                room.CalculationFormula = $"Lвыт = 1.0 × {vol} = {room.RequiredExhaustAir} м³/ч; Lпр = 0 (мех. приток не требуется)";
                 room.SystemTag = "В-Тех";
                 return;
             }
@@ -79,224 +87,207 @@ namespace HvacAutoCalculator.DataMapper
                 room.NormalizedType = $"ДЭС / Топливная ({room.FireCategory})";
                 room.NormCode = "СП 60.13330.2020";
                 room.NormCitation = "Технологический воздухообмен ДЭС: приток K=5.0 1/ч, вытяжка K=6.0 1/ч";
+                room.CalculationMethod = "Технологический воздухообмен (Kпр=5.0, Kвыт=6.0)";
                 room.RequiredSupplyAir = Math.Round(vol * 5.0, 0);
                 room.RequiredExhaustAir = Math.Round(vol * 6.0, 0);
+                room.CalculationFormula = $"Lпр = 5.0 × {vol} = {room.RequiredSupplyAir} м³/ч; Lвыт = 6.0 × {vol} = {room.RequiredExhaustAir} м³/ч";
                 room.SystemTag = "П-ДЭС / В-ДЭС";
                 return;
             }
 
-            // 6. Венткамера / Холодильный центр / Кондиционирование
+            // 6. Венткамера / Холодильный центр / АУГПТ
             if (lower.Contains("венткамер") || lower.Contains("холодильн") || lower.Contains("кондиционир") || lower.Contains("аугпт"))
             {
-                room.NormalizedType = $"Венткамера / ОВиК ({room.FireCategory})";
-                room.NormCode = "СП 60.13330.2020";
-                room.NormCitation = "Собственные нужды венткамеры: приток K=1.0 1/ч, вытяжка K=1.0 1/ч";
+                room.NormalizedType = $"Венткамера / Тех ({room.FireCategory})";
+                room.NormCode = "СП 60.13330.2020 п. 7.1";
+                room.NormCitation = "Кратность воздухообмена: приток K=1.0 1/ч, вытяжка K=1.0 1/ч";
+                room.CalculationMethod = "По кратности (K=1.0)";
                 room.RequiredSupplyAir = Math.Round(vol * 1.0, 0);
                 room.RequiredExhaustAir = Math.Round(vol * 1.0, 0);
-                room.SystemTag = "П1 / В1";
-                return;
-            }
-
-            // 7. ИТП / Насосная / КНС / Водомерный узел
-            if (lower.Contains("итп") || lower.Contains("тепловой") || lower.Contains("кнс") || lower.Contains("насос"))
-            {
-                room.NormalizedType = $"ИТП / КНС ({room.FireCategory})";
-                room.NormCode = "СП 60.13330.2020 / СП 124.13330";
-                room.NormCitation = "Вытяжка с мех. побуждением K=3.0 1/ч, компенсационный приток K=3.0 1/ч";
-                room.RequiredSupplyAir = Math.Round(vol * 3.0, 0);
-                room.RequiredExhaustAir = Math.Round(vol * 3.0, 0);
+                room.CalculationFormula = $"Lпр = 1.0 × {vol} = {room.RequiredSupplyAir} м³/ч; Lвыт = 1.0 × {vol} = {room.RequiredExhaustAir} м³/ч";
                 room.SystemTag = "П-Тех / В-Тех";
                 return;
             }
 
-            // 8. Тамбур-шлюз / Лифтовый холл / Безопасная зона (подпор >= 100 м3/ч)
-            if (lower.Contains("тамбур") || lower.Contains("лифтов") || lower.Contains("лестничн"))
+            // 7. ИТП / Насосная станция / Водомерный узел
+            if (lower.Contains("итп") || lower.Contains("тепловой") || lower.Contains("насосн") || lower.Contains("кнс") || lower.Contains("водомер"))
             {
-                room.NormalizedType = "МОП / Тамбур-шлюз";
-                room.NormCode = "СП 60.13330.2020 / СП 7.13130";
-                room.NormCitation = "Избыточное давление >= 20 Па (подпор не менее 100 м3/ч, вытяжка 0)";
+                room.NormalizedType = $"ИТП / Насосная ({room.FireCategory})";
+                room.NormCode = "СП 41-101-95 / СП 60.13330.2020";
+                room.NormCitation = "Кратность механической вентиляции: приток K=3.0, вытяжка K=3.0";
+                room.CalculationMethod = "По кратности (K=3.0)";
+                room.RequiredSupplyAir = Math.Round(vol * 3.0, 0);
+                room.RequiredExhaustAir = Math.Round(vol * 3.0, 0);
+                room.CalculationFormula = $"Lпр = 3.0 × {vol} = {room.RequiredSupplyAir} м³/ч; Lвыт = 3.0 × {vol} = {room.RequiredExhaustAir} м³/ч";
+                room.SystemTag = "П-Тех / В-Тех";
+                return;
+            }
+
+            // 8. Тамбур-шлюз / Лифтовой холл с подпором
+            if (lower.Contains("тамбур") || lower.Contains("лифтовой холл"))
+            {
+                room.NormalizedType = "Тамбур-шлюз / Лифтовой холл";
+                room.NormCode = "СП 7.13130.2013 / СП 60.13330.2020";
+                room.NormCitation = "Подпор воздуха при пожаре/избыточном давлении не менее 20 Па (L >= 100 м3/ч)";
+                room.CalculationMethod = "Подпор воздуха (ΔP ≥ 20 Па)";
                 room.RequiredSupplyAir = Math.Max(100, Math.Round(vol * 1.5, 0));
                 room.RequiredExhaustAir = 0;
-                room.SystemTag = "П-МОП";
+                room.CalculationFormula = $"Lпр = max(100, 1.5 × {vol}) = {room.RequiredSupplyAir} м³/ч; Lвыт = 0 (избыточное давление ≥ 20 Па)";
+                room.SystemTag = "ПД-Подпор";
                 return;
             }
 
-            // 9. Кладовые / Склады / Пожарный инвентарь / Мусорокамера
-            if (lower.Contains("кладов") || lower.Contains("склад") || lower.Contains("инвентар") || lower.Contains("мусор"))
+            // 9. Офисные / Рабочие помещения (по людям)
+            if (lower.Contains("офис") || lower.Contains("кабинет") || lower.Contains("переговор") || lower.Contains("диспетчер") || lower.Contains("охрана") || lower.Contains("пост"))
             {
-                room.NormalizedType = $"Склад / Кладовая ({room.FireCategory})";
-                room.NormCode = "СП 60.13330.2020";
-                room.NormCitation = "Вытяжка K=1.5 1/ч (разряжение), приток K=1.0 1/ч";
+                int people = Math.Max(1, (int)Math.Ceiling(room.Area / 6.0));
+                room.PeopleCount = people;
+                room.NormalizedType = "Офис / Рабочее помещение";
+                room.NormCode = "СП 60.13330.2020 / СанПиН 1.2.3685-21";
+                room.NormCitation = $"Санитарная норма по людям: 60 м3/ч на 1 человека при отсутствии естественного проветривания ({people} чел.)";
+                room.CalculationMethod = $"По числу людей ({people} чел × 60 м³/ч)";
+                room.RequiredSupplyAir = people * 60;
+                room.RequiredExhaustAir = Math.Round(people * 55.0, 0); // Небольшой подпор +5 м3/ч на чел
+                room.CalculationFormula = $"Lпр = {people} чел × 60 = {room.RequiredSupplyAir} м³/ч; Lвыт = {people} чел × 55 = {room.RequiredExhaustAir} м³/ч";
+                room.SystemTag = "П-Общ / В-Общ";
+                return;
+            }
+
+            // 10. Кладовые / Склады / Помещения хранения
+            if (lower.Contains("кладов") || lower.Contains("склад") || lower.Contains("мусор") || lower.Contains("инвентар") || lower.Contains("хранени") || lower.Contains("архив"))
+            {
+                room.NormalizedType = $"Кладовая / Склад ({room.FireCategory})";
+                room.NormCode = "СП 60.13330.2020 / СП 54.13330.2022";
+                room.NormCitation = "Кратность для складских зон: вытяжка K=1.5 1/ч, приток K=1.0 1/ч (разряжение)";
+                room.CalculationMethod = "По кратности (Kпр=1.0, Kвыт=1.5)";
                 room.RequiredSupplyAir = Math.Round(vol * 1.0, 0);
                 room.RequiredExhaustAir = Math.Round(vol * 1.5, 0);
-                room.SystemTag = "П1 / В-Склад";
+                room.CalculationFormula = $"Lпр = 1.0 × {vol} = {room.RequiredSupplyAir} м³/ч; Lвыт = 1.5 × {vol} = {room.RequiredExhaustAir} м³/ч";
+                room.SystemTag = "П-Общ / В-Общ";
                 return;
             }
 
-            // 10. Офисы / Кабинеты / Переговорные (по удельному расходу на человека 60 / 40 м3/ч)
-            if (lower.Contains("офис") || lower.Contains("кабинет") || lower.Contains("переговор") || lower.Contains("диспетчер"))
+            // 11. Коридоры / Холлы / Лестничные клетки / МОП
+            if (lower.Contains("коридор") || lower.Contains("моп") || lower.Contains("лестнич") || lower.Contains("вестибюл"))
             {
-                int people = room.PeopleCount > 0 ? room.PeopleCount : Math.Max(1, (int)Math.Round(room.Area / 6.0));
-                double normPerPerson = room.HasNaturalVentilation ? 40.0 : 60.0;
-                double supply = Math.Max(people * normPerPerson, vol * 2.0);
-                room.NormalizedType = "Офис / Рабочая зона";
-                room.NormCode = "СП 60.13330.2020 / СанПиН 1.2.3685-21";
-                room.NormCitation = $"{normPerPerson} м3/ч на чел. ({people} чел.), подпор +10%";
-                room.RequiredSupplyAir = Math.Round(supply, 0);
-                room.RequiredExhaustAir = Math.Round(supply * 0.9, 0);
-                room.SystemTag = "П1 / В1";
+                room.NormalizedType = "МОП / Коридор";
+                room.NormCode = "СП 60.13330.2020";
+                room.NormCitation = "Общеобменная вентиляция коридоров: компенсационный приток K=1.0, вытяжка K=0.5";
+                room.CalculationMethod = "По кратности (Kпр=1.0, Kвыт=0.5)";
+                room.RequiredSupplyAir = Math.Round(vol * 1.0, 0);
+                room.RequiredExhaustAir = Math.Round(vol * 0.5, 0);
+                room.CalculationFormula = $"Lпр = 1.0 × {vol} = {room.RequiredSupplyAir} м³/ч; Lвыт = 0.5 × {vol} = {room.RequiredExhaustAir} м³/ч";
+                room.SystemTag = "П-Общ / В-Общ";
                 return;
             }
 
-            // 11. Fallback к LLM (Gemini / Ollama) для нетиповых помещений
-            await QueryLlmFallbackAsync(room);
+            // Если по паттернам не найдено — вызываем локальную нейросеть (Ollama)
+            bool llmSuccess = await TryClassifyWithLlmAsync(room);
+            if (!llmSuccess)
+            {
+                // Санитарный дефолт по СП 60.13330
+                room.NormalizedType = $"Тех. помещение ({room.FireCategory})";
+                room.NormCode = "СП 60.13330.2020";
+                room.NormCitation = "Базовый санитарный воздухообмен K=1.0 1/ч";
+                room.CalculationMethod = "По кратности (K=1.0)";
+                room.RequiredSupplyAir = Math.Round(vol * 1.0, 0);
+                room.RequiredExhaustAir = Math.Round(vol * 1.0, 0);
+                room.CalculationFormula = $"Lпр = 1.0 × {vol} = {room.RequiredSupplyAir} м³/ч; Lвыт = 1.0 × {vol} = {room.RequiredExhaustAir} м³/ч";
+                room.SystemTag = "П-Общ / В-Общ";
+            }
         }
 
-        private async Task QueryLlmFallbackAsync(Room room)
+        private async Task<bool> TryClassifyWithLlmAsync(Room room)
         {
-            double vol = room.Volume;
-            string prompt = $@"Ты инженер-проектировщик ОВиК высшей категории.
-Дано помещение: ""{room.RawName}"", площадь: {room.Area} м2, высота: {room.EffectiveHeight} м, объем: {vol} м3.
-Определи:
-1. Профильный нормативный документ РФ (СП 60.13330.2020, СП 118.13330.2022, СП 54.13330.2022, СанПиН 1.2.3685-21).
-2. Метод расчета (кратность, удельный расход на человека, фиксированный расход).
-3. Кратность или расход притока (L_in, м3/ч).
-4. Кратность или расход вытяжки (L_out, м3/ч).
-5. Требование по дисбалансу (подпор или разряжение).
-Ответь СТРОГО в формате JSON без разметки:
-{{""normDoc"": ""..."", ""method"": ""..."", ""inflowRate"": number, ""exhaustRate"": number, ""notes"": ""...""}}";
-
             try
             {
-                var payload = new { model = "qwen2.5-coder:14b", prompt = prompt, stream = false };
-                var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-                var resp = await _httpClient.PostAsync($"{_llmUrl}/api/generate", content);
-                if (resp.IsSuccessStatusCode)
+                var payload = new
                 {
-                    var json = await resp.Content.ReadAsStringAsync();
-                    using var doc = JsonDocument.Parse(json);
-                    if (doc.RootElement.TryGetProperty("response", out var respProp))
-                    {
-                        var innerText = respProp.GetString() ?? "";
-                        int sIdx = innerText.IndexOf('{');
-                        int eIdx = innerText.LastIndexOf('}');
-                        if (sIdx >= 0 && eIdx > sIdx)
-                        {
-                            using var normDoc = JsonDocument.Parse(innerText.Substring(sIdx, eIdx - sIdx + 1));
-                            var root = normDoc.RootElement;
-                            room.NormCode = root.TryGetProperty("normDoc", out var nd) ? (nd.GetString() ?? "СП 60.13330.2020") : "СП 60.13330.2020";
-                            room.NormCitation = root.TryGetProperty("notes", out var nt) ? (nt.GetString() ?? "ИИ-классификация") : "ИИ-классификация";
-                            room.RequiredSupplyAir = root.TryGetProperty("inflowRate", out var ir) && ir.ValueKind == JsonValueKind.Number ? ir.GetDouble() : Math.Round(vol * 1.5, 0);
-                            room.RequiredExhaustAir = root.TryGetProperty("exhaustRate", out var er) && er.ValueKind == JsonValueKind.Number ? er.GetDouble() : Math.Round(vol * 1.5, 0);
-                            room.NormalizedType = $"Тех. зона ({room.FireCategory})";
-                            room.SystemTag = "П1 / В1";
-                            return;
-                        }
-                    }
-                }
+                    model = "llama3:8b",
+                    prompt = $"Классифицируй помещение для вентиляции по СП 60.13330. Наименование: «{room.RawName}». Ответь JSON с полями normalizedType, normCode, supplyK, exhaustK, systemTag.",
+                    stream = false,
+                    format = "json"
+                };
+
+                var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+                using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(2.0));
+                var response = await _httpClient.PostAsync($"{_llmUrl}/api/generate", content, cts.Token);
+
+                if (!response.IsSuccessStatusCode) return false;
+
+                var respString = await response.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(respString);
+                string responseText = doc.RootElement.GetProperty("response").GetString() ?? "";
+
+                using var innerDoc = JsonDocument.Parse(responseText);
+                var root = innerDoc.RootElement;
+
+                room.NormalizedType = root.GetProperty("normalizedType").GetString() ?? "Помещение";
+                room.NormCode = root.GetProperty("normCode").GetString() ?? "СП 60.13330.2020";
+                double sk = root.GetProperty("supplyK").GetDouble();
+                double ek = root.GetProperty("exhaustK").GetDouble();
+                room.SystemTag = root.GetProperty("systemTag").GetString() ?? "П1/В1";
+
+                room.RequiredSupplyAir = Math.Round(room.Volume * sk, 0);
+                room.RequiredExhaustAir = Math.Round(room.Volume * ek, 0);
+                room.CalculationMethod = $"LLM / По кратности (Kпр={sk}, Kвыт={ek})";
+                room.CalculationFormula = $"Lпр = {sk} × {room.Volume} = {room.RequiredSupplyAir} м³/ч; Lвыт = {ek} × {room.Volume} = {room.RequiredExhaustAir} м³/ч";
+                room.NormCitation = $"Классифицировано LLM (Kпр={sk}, Kвыт={ek})";
+                return true;
             }
             catch
             {
-                // Переход на резервный норматив при недоступности LLM
+                return false;
             }
-
-            room.NormalizedType = $"Тех. помещение ({room.FireCategory})";
-            room.NormCode = "СП 60.13330.2020";
-            room.NormCitation = "Нормативный воздухообмен K=1.5 1/ч";
-            room.RequiredSupplyAir = Math.Round(vol * 1.5, 0);
-            room.RequiredExhaustAir = Math.Round(vol * 1.5, 0);
-            room.SystemTag = "П1 / В1";
         }
 
-        public EstimateSummaryDto BuildEstimate(IEnumerable<Room> rooms)
+        public EstimateSummaryDto CalculateEstimate(IEnumerable<Room> rooms)
         {
-            var list = rooms.ToList();
             var summary = new EstimateSummaryDto();
+            var list = rooms.ToList();
+            if (!list.Any()) return summary;
 
-            double supplyGeneral = list.Where(r => !r.SystemTag.Contains("Паркинг")).Sum(r => r.RequiredSupplyAir);
-            double supplyParking = list.Where(r => r.SystemTag.Contains("Паркинг")).Sum(r => r.RequiredSupplyAir);
-            double exhaustGeneral = list.Where(r => r.SystemTag != "ВЕ-С/У" && !r.SystemTag.Contains("Паркинг")).Sum(r => r.RequiredExhaustAir);
-            double exhaustSanitary = list.Where(r => r.SystemTag == "ВЕ-С/У").Sum(r => r.RequiredExhaustAir);
-            double exhaustParking = list.Where(r => r.SystemTag.Contains("Паркинг")).Sum(r => r.RequiredExhaustAir);
-
-            if (supplyGeneral > 0)
-            {
-                summary.Systems.Add(new HvacSystemGroupDto
-                {
-                    SystemCode = "П1",
-                    SystemType = "Приточная общеобменная",
-                    ServedRooms = "Тех. помещения, МОП, венткамеры, кладовые",
-                    BaseAirflow = supplyGeneral,
-                    RecommendedMetalThickness = supplyGeneral > 3000 ? "0.7 мм (СП 60.13330)" : "0.5 мм (СП 60.13330)",
-                    SelectedUnitModel = $"ПВУ-К-{Math.Ceiling(supplyGeneral * 1.1 / 500) * 500} (H=450 Па, водяной калорифер, фильтр F7)"
-                });
-            }
-
-            if (supplyParking > 0)
-            {
-                summary.Systems.Add(new HvacSystemGroupDto
-                {
-                    SystemCode = "П2-АС",
-                    SystemType = "Приточная подземной автостоянки",
-                    ServedRooms = "Помещения хранения автомобилей (В2)",
-                    BaseAirflow = supplyParking,
-                    RecommendedMetalThickness = "0.9 мм (огнестойкие транзит EI60)",
-                    SelectedUnitModel = $"АПК-П-{Math.Ceiling(supplyParking * 1.1 / 1000) * 1000} (H=600 Па, ОЗК EI60)"
-                });
-            }
-
-            if (exhaustGeneral > 0)
-            {
-                summary.Systems.Add(new HvacSystemGroupDto
-                {
-                    SystemCode = "В1",
-                    SystemType = "Вытяжная общеобменная",
-                    ServedRooms = "Тех. помещения, электрощитовые, кладовые, ДЭС",
-                    BaseAirflow = exhaustGeneral,
-                    RecommendedMetalThickness = exhaustGeneral > 3000 ? "0.7 мм (СП 60.13330)" : "0.5 мм (СП 60.13330)",
-                    SelectedUnitModel = $"ВР-80-75 / ВКП-{Math.Ceiling(exhaustGeneral * 1.1 / 500) * 500} (H=400 Па)"
-                });
-            }
-
-            if (exhaustSanitary > 0)
-            {
-                summary.Systems.Add(new HvacSystemGroupDto
-                {
-                    SystemCode = "ВЕ-С/У",
-                    SystemType = "Вытяжная санузлов и ПУИ (изолированная по СП 60)",
-                    ServedRooms = "Санузлы, ПУИ, комнаты уборочного инвентаря",
-                    BaseAirflow = exhaustSanitary,
-                    RecommendedMetalThickness = "0.5 мм (оцинкованная сталь)",
-                    SelectedUnitModel = $"ВКК-160/200 ({Math.Round(exhaustSanitary * 1.1, 0)} м3/ч, H=300 Па)"
-                });
-            }
-
-            if (exhaustParking > 0)
-            {
-                summary.Systems.Add(new HvacSystemGroupDto
-                {
-                    SystemCode = "В2-АС",
-                    SystemType = "Вытяжная подземной автостоянки (верхняя и нижняя зоны)",
-                    ServedRooms = "Помещения хранения автомобилей (В2)",
-                    BaseAirflow = exhaustParking,
-                    RecommendedMetalThickness = "0.9 мм (СП 60.13330)",
-                    SelectedUnitModel = $"ВР-АС-{Math.Ceiling(exhaustParking * 1.1 / 1000) * 1000} (взрывозащищенный, H=550 Па)"
-                });
-            }
+            var sysGroups = list
+                .GroupBy(r => r.SystemTag)
+                .OrderBy(g => g.Key);
 
             int pos = 1;
-            foreach (var sys in summary.Systems)
+
+            foreach (var g in sysGroups)
             {
-                double unitCost = sys.SystemType.Contains("Приточная")
-                    ? 185000 + sys.TotalAirflowWithReserve * 28.0
-                    : 68000 + sys.TotalAirflowWithReserve * 14.0;
+                string sysCode = g.Key.Split('/')[0].Trim();
+                double supplySum = g.Sum(r => r.RequiredSupplyAir);
+                double exhaustSum = g.Sum(r => r.RequiredExhaustAir);
+                double maxAirflow = Math.Max(supplySum, exhaustSum);
+
+                string sysType = sysCode.StartsWith("П") ? "Приточная установка" : "Вытяжная установка";
+                if (sysCode.Contains("Паркинг")) sysType = "Приточно-вытяжная система паркинга";
+                if (sysCode.Contains("С/У") || sysCode.Contains("СУ")) sysType = "Вытяжная система санузлов";
+
+                string served = string.Join(", ", g.Select(r => r.Number).Take(12));
+                if (g.Count() > 12) served += $" и еще {g.Count() - 12} пом.";
+
+                var sysDto = new HvacSystemGroupDto
+                {
+                    SystemCode = sysCode,
+                    SystemType = sysType,
+                    ServedRooms = served,
+                    BaseAirflow = Math.Round(maxAirflow, 0),
+                    SelectedUnitModel = $"ВЕНТ-МАСТЕР-{Math.Round(maxAirflow * 1.10 / 100) * 100}"
+                };
+
+                summary.Systems.Add(sysDto);
+
+                double unitCost = sysDto.TotalAirflowWithReserve > 5000
+                    ? 180000 + sysDto.TotalAirflowWithReserve * 28.5
+                    : 68000 + sysDto.TotalAirflowWithReserve * 14.0;
 
                 summary.Items.Add(new EstimateLineItemDto
                 {
                     Position = pos++,
                     Section = "1. Оборудование",
-                    Name = $"Установка вентиляционная {sys.SystemCode}",
-                    Specification = $"{sys.SelectedUnitModel}, L={sys.TotalAirflowWithReserve} м3/ч",
+                    Name = $"Установка вентиляционная {sysDto.SystemCode}",
+                    Specification = $"{sysDto.SelectedUnitModel}, L={sysDto.TotalAirflowWithReserve} м3/ч",
                     Unit = "компл.",
                     Quantity = 1,
                     UnitPrice = Math.Round(unitCost, 0)

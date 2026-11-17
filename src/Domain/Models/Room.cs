@@ -24,6 +24,8 @@ namespace HvacAutoCalculator.Domain.Models
 
         public string NormCode { get; set; } = "СП 60.13330.2020";
         public string NormCitation { get; set; } = "Кратность по справочнику";
+        public string CalculationMethod { get; set; } = "По кратности";
+        public string CalculationFormula { get; set; } = string.Empty;
         public string SystemTag { get; set; } = "П1/В1";
         public Guid? SupplySystemId { get; set; }
         public Guid? ExhaustSystemId { get; set; }

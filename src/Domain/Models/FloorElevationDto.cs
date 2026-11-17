@@ -9,8 +9,11 @@ namespace HvacAutoCalculator.Domain.Models
         public string Name { get; set; } = "-3 этаж";
         public double ElevationBottom { get; set; } = -11.400; // H_i
         public double ElevationTop { get; set; } = -7.800;     // H_{i+1}
-        public double SlabThickness { get; set; } = 0.300;     // \delta_i
-        public double NetHeight => Math.Round(Math.Max(2.0, (ElevationTop - ElevationBottom) - SlabThickness), 2);
+        public double? HeightOverride { get; set; }
+        // Чистая высота этажа задается напрямую из проекта/PDF либо равна разности отметок без вычитания плиты
+        public double NetHeight => HeightOverride.HasValue && HeightOverride.Value > 0
+            ? Math.Round(HeightOverride.Value, 3)
+            : Math.Round(Math.Max(2.0, Math.Abs(ElevationTop - ElevationBottom)), 3);
     }
 
     public class RoomCalculationDto
@@ -24,6 +27,8 @@ namespace HvacAutoCalculator.Domain.Models
         public double Volume => Math.Round(Area * Height, 2);
         public string NormCode { get; set; } = "СП 60.13330.2020";
         public string NormCitation { get; set; } = string.Empty;
+        public string CalculationMethod { get; set; } = "По кратности";
+        public string CalculationFormula { get; set; } = string.Empty;
         public double InflowRate { get; set; }
         public double ExhaustRate { get; set; }
         public double Balance => Math.Round(InflowRate - ExhaustRate, 0);
