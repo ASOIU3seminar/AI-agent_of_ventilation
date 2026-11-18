@@ -31,12 +31,12 @@ export function Sidebar({
         {/* Заголовок бренда */}
         <div className="flex items-center justify-between pb-3 border-b border-[#1e3a5f]">
           <div className="flex items-center gap-2.5 overflow-hidden">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-emerald-400 flex items-center justify-center font-black text-sm text-white shadow-md shadow-emerald-500/25 shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center font-black text-sm text-white shrink-0">
               <Wind className="w-4 h-4" />
             </div>
             {!isCollapsed && (
               <div className="leading-tight truncate">
-                <div className="font-extrabold text-xs bg-gradient-to-r from-blue-400 via-teal-300 to-emerald-400 bg-clip-text text-transparent truncate">
+                <div className="font-extrabold text-xs text-white truncate">
                   AI Ventilation
                 </div>
                 <div className="text-[10px] text-slate-400 truncate">СП 60 • ХОВС • ГОСТ</div>
@@ -67,7 +67,7 @@ export function Sidebar({
               isCollapsed ? 'justify-center p-2' : 'justify-between py-2 px-2.5'
             } rounded-xl text-xs font-semibold transition-all ${
               activeTab === 'map'
-                ? 'bg-gradient-to-r from-blue-600/35 to-emerald-500/25 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/50'
                 : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'
             }`}
           >
@@ -89,7 +89,7 @@ export function Sidebar({
               isCollapsed ? 'justify-center p-2' : 'justify-between py-2 px-2.5'
             } rounded-xl text-xs font-semibold transition-all ${
               activeTab === 'floors'
-                ? 'bg-gradient-to-r from-blue-600/35 to-emerald-500/25 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/50'
                 : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'
             }`}
           >
@@ -111,7 +111,7 @@ export function Sidebar({
               isCollapsed ? 'justify-center p-2' : 'justify-between py-2 px-2.5'
             } rounded-xl text-xs font-semibold transition-all ${
               activeTab === 'table'
-                ? 'bg-gradient-to-r from-blue-600/35 to-emerald-500/25 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/50'
                 : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'
             }`}
           >
@@ -133,7 +133,7 @@ export function Sidebar({
               isCollapsed ? 'justify-center p-2' : 'justify-between py-2 px-2.5'
             } rounded-xl text-xs font-semibold transition-all ${
               activeTab === 'estimate'
-                ? 'bg-gradient-to-r from-blue-600/35 to-emerald-500/25 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/50'
                 : 'text-slate-400 hover:bg-slate-800/70 hover:text-white'
             }`}
           >
@@ -158,7 +158,7 @@ export function Sidebar({
           </div>
           <div className="text-slate-300 truncate">{activeFloor?.name}</div>
           <div className="text-[10px] text-sky-300 font-mono">
-            Δh = {currentNetHeight} м (плита {activeFloor?.slabThickness} м)
+            Высота Δh = {currentNetHeight} м
           </div>
         </div>
       )}

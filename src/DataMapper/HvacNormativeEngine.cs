@@ -53,17 +53,51 @@ namespace HvacAutoCalculator.DataMapper
                 return;
             }
 
-            // 3. Санузел раздельный / совмещенный
-            if (lower.Contains("санузел") || lower.Contains("уборная") || lower.Contains("туалет") || lower.Contains("с/у"))
+            // 3. Санузел раздельный / совмещенный / душевая (СП 118.13330.2022 табл. 7.1, СП 44.13330.2011)
+            if (lower.Contains("санузел") || lower.Contains("уборная") || lower.Contains("туалет") || lower.Contains("с/у") || lower.Contains("душев"))
             {
-                room.NormalizedType = "Санузел";
-                room.NormCode = "СП 118.13330.2022 / СП 54.13330";
-                room.NormCitation = "Фиксированная вытяжка 50–75 м3/ч на прибор, приток перетоком (разряжение)";
-                room.CalculationMethod = "Санитарная норма (min 75 м³/ч)";
+                room.NormalizedType = lower.Contains("душ") ? "Душевая" : "Санузел";
+                room.NormCode = "СП 118.13330.2022 табл. 7.1 / СП 44.13330.2011";
+                room.NormCitation = "50 м³/ч на 1 унитаз, 25 м³/ч на 1 писсуар, 75 м³/ч на 1 душ.сетку (СП 118.13330 / СП 44.13330)";
+                room.CalculationMethod = "По сан. приборам (СП 118.13330)";
+
+                // Автоопределение сан. приборов, если не заданы вручную
+                if (room.ToiletCount == 0 && room.UrinalCount == 0 && room.ShowerCount == 0 && room.SinkCount == 0)
+                {
+                    if (lower.Contains("душ"))
+                    {
+                        room.ShowerCount = Math.Max(1, (int)Math.Round(room.Area / 3.0));
+                    }
+                    else if (lower.Contains("женск"))
+                    {
+                        room.ToiletCount = Math.Max(1, (int)Math.Round(room.Area / 3.0));
+                    }
+                    else if (lower.Contains("мужск"))
+                    {
+                        room.ToiletCount = Math.Max(1, (int)Math.Round(room.Area / 4.0));
+                        room.UrinalCount = Math.Max(1, (int)Math.Round(room.Area / 4.0));
+                    }
+                    else
+                    {
+                        room.ToiletCount = 1;
+                        if (room.Area >= 3.0) room.UrinalCount = 1;
+                    }
+                }
+
+                double exhaust = (room.ToiletCount * 50.0) + (room.UrinalCount * 25.0) + (room.ShowerCount * 75.0) + (room.SinkCount * 20.0);
+                if (exhaust < 50.0) exhaust = 50.0;
+
                 room.RequiredSupplyAir = 0;
-                room.RequiredExhaustAir = Math.Max(75, Math.Round(vol * 5.0, 0));
-                room.CalculationFormula = $"Lвыт = max(75, 5.0 × {vol}) = {room.RequiredExhaustAir} м³/ч; Lпр = 0 (переток)";
-                room.SystemTag = "ВЕ-С/У";
+                room.RequiredExhaustAir = exhaust;
+
+                var formulaParts = new List<string>();
+                if (room.ToiletCount > 0) formulaParts.Add($"{room.ToiletCount} унит × 50");
+                if (room.UrinalCount > 0) formulaParts.Add($"{room.UrinalCount} писс × 25");
+                if (room.ShowerCount > 0) formulaParts.Add($"{room.ShowerCount} душ × 75");
+                if (room.SinkCount > 0) formulaParts.Add($"{room.SinkCount} умыв × 20");
+
+                room.CalculationFormula = $"Lвыт = {string.Join(" + ", formulaParts)} = {exhaust} м³/ч; Lпр = 0 (переток по СП 118.13330)";
+                room.SystemTag = "В-СУ";
                 return;
             }
 
@@ -137,18 +171,24 @@ namespace HvacAutoCalculator.DataMapper
                 return;
             }
 
-            // 9. Офисные / Рабочие помещения (по людям)
-            if (lower.Contains("офис") || lower.Contains("кабинет") || lower.Contains("переговор") || lower.Contains("диспетчер") || lower.Contains("охрана") || lower.Contains("пост"))
+            // 9. Офисные / Рабочие помещения / Переговорные (строго по людям по СП 60.13330 и СанПиН)
+            if (lower.Contains("офис") || lower.Contains("кабинет") || lower.Contains("переговор") || lower.Contains("диспетчер") || lower.Contains("охрана") || lower.Contains("пост") || lower.Contains("администр"))
             {
-                int people = Math.Max(1, (int)Math.Ceiling(room.Area / 6.0));
+                int people = room.PeopleCount > 0 
+                    ? room.PeopleCount 
+                    : Math.Max(1, (int)Math.Ceiling(room.Area / 6.0)); // 6 м2 на 1 раб. место по СанПиН 1.2.3685-21
                 room.PeopleCount = people;
+
+                double ratePerPerson = room.HasNaturalVentilation ? 40.0 : 60.0;
                 room.NormalizedType = "Офис / Рабочее помещение";
-                room.NormCode = "СП 60.13330.2020 / СанПиН 1.2.3685-21";
-                room.NormCitation = $"Санитарная норма по людям: 60 м3/ч на 1 человека при отсутствии естественного проветривания ({people} чел.)";
-                room.CalculationMethod = $"По числу людей ({people} чел × 60 м³/ч)";
-                room.RequiredSupplyAir = people * 60;
-                room.RequiredExhaustAir = Math.Round(people * 55.0, 0); // Небольшой подпор +5 м3/ч на чел
-                room.CalculationFormula = $"Lпр = {people} чел × 60 = {room.RequiredSupplyAir} м³/ч; Lвыт = {people} чел × 55 = {room.RequiredExhaustAir} м³/ч";
+                room.NormCode = "СП 60.13330.2020 п. 7.1 / СанПиН 1.2.3685-21";
+                room.NormCitation = $"Санитарная норма по людям: {ratePerPerson} м³/ч на 1 человека ({people} чел. по СанПиН 1.2.3685-21, 6 м²/чел)";
+                room.CalculationMethod = $"По числу людей ({people} чел × {ratePerPerson} м³/ч)";
+                
+                double flow = Math.Round(people * ratePerPerson, 0);
+                room.RequiredSupplyAir = flow;
+                room.RequiredExhaustAir = flow; // Баланс по СП 60.13330.2020
+                room.CalculationFormula = $"Lпр = {people} чел × {ratePerPerson} = {flow} м³/ч; Lвыт = {flow} м³/ч (по балансу СП 60.13330 / СанПиН)";
                 room.SystemTag = "П-Общ / В-Общ";
                 return;
             }

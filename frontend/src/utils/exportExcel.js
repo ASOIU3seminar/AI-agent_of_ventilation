@@ -2,7 +2,7 @@
 export function exportHovsToExcel({ activeFloor, currentNetHeight, rooms, estimate, fileName }) {
   let csv = '\uFEFFРАЗДЕЛ 1: ТАБЛИЦА ЭКСПЛИКАЦИИ, НОРМ СП И ФОРМУЛ РАСЧЕТА ВОЗДУХООБМЕНА (ХОВС ПО ГОСТ 21.602)\n';
   csv += `Активный этаж:;${activeFloor.name};Отметка уровня:;${activeFloor.elevationBottom ?? '-'} м;Чистая высота Δh:;${currentNetHeight} м\n\n`;
-  csv += '№ Пом.;Наименование помещения;Категория СП;Площадь S (м2);Высота Δh (м);Объем V (м3);Нормативный документ (СП / ГОСТ);Методика расчета;Формула расчета воздухообмена;Приток Lпр (м3/ч);Вытяжка Lвыт (м3/ч);Дисбаланс ΔL;Система;Источник разметки\n';
+  csv += '№ Пом.;Наименование помещения;Категория СП;Площадь S (м2);Высота Δh (м);Объем V (м3);Люди / Сан. приборы;Нормативный документ (СП / ГОСТ);Методика расчета;Формула расчета воздухообмена;Приток Lпр (м3/ч);Вытяжка Lвыт (м3/ч);Дисбаланс ΔL;Система;Источник разметки\n';
 
   rooms.forEach(r => {
     const s = String(r.area).replace('.', ',');
@@ -13,7 +13,19 @@ export function exportHovsToExcel({ activeFloor, currentNetHeight, rooms, estima
     const formula = r.calculationFormula || `Lпр = ${r.requiredSupplyAir} м3/ч; Lвыт = ${r.requiredExhaustAir} м3/ч`;
     const src = r.detectionSource || 'Экспликация PDF';
 
-    csv += `"${r.number}";"${r.rawName}";"${r.normalizedType}";"${s}";"${h}";"${v}";"${norm}";"${method}";"${formula}";${r.requiredSupplyAir};${r.requiredExhaustAir};${r.balance};"${r.systemTag}";"${src}"\n`;
+    let occupants = '—';
+    if (r.toilets > 0 || r.urinals > 0 || r.showers > 0 || r.sinks > 0) {
+      const parts = [];
+      if (r.toilets > 0) parts.push(`${r.toilets} унит.`);
+      if (r.urinals > 0) parts.push(`${r.urinals} писс.`);
+      if (r.showers > 0) parts.push(`${r.showers} душ.`);
+      if (r.sinks > 0) parts.push(`${r.sinks} умыв.`);
+      occupants = parts.join(', ');
+    } else if (r.peopleCount > 0) {
+      occupants = `${r.peopleCount} чел. ${r.hasNaturalVentilation ? '(окна)' : ''}`;
+    }
+
+    csv += `"${r.number}";"${r.rawName}";"${r.normalizedType}";"${s}";"${h}";"${v}";"${occupants}";"${norm}";"${method}";"${formula}";${r.requiredSupplyAir};${r.requiredExhaustAir};${r.balance};"${r.systemTag}";"${src}"\n`;
   });
 
   // Строка ИТОГО
@@ -23,7 +35,7 @@ export function exportHovsToExcel({ activeFloor, currentNetHeight, rooms, estima
   const totalLext = rooms.reduce((acc, r) => acc + (r.requiredExhaustAir || 0), 0);
   const totalBal = totalLpr - totalLext;
 
-  csv += `"ИТОГО ПО ЭТАЖУ";"Все помещения этажа";"";"${totalS}";"${String(currentNetHeight).replace('.', ',')}";"${totalV}";"";"";"";${totalLpr};${totalLext};${totalBal};"";""\n`;
+  csv += `"ИТОГО ПО ЭТАЖУ";"Все помещения этажа";"";"${totalS}";"${String(currentNetHeight).replace('.', ',')}";"${totalV}";"";"";"";"";${totalLpr};${totalLext};${totalBal};"";""\n`;
 
   if (estimate && estimate.systems && estimate.systems.length > 0) {
     csv += `\nРАЗДЕЛ 2: СПЕЦИФИКАЦИЯ СИСТЕМ ВЕНТИЛЯЦИИ (П и В)\n`;

@@ -27,6 +27,7 @@ namespace HvacAutoCalculator.ExcelGenerator
                 "Площадь S, м²",
                 "Высота H, м",
                 "Объем V, м³",
+                "Люди / Сан. приборы",
                 "Нормативный документ (СП / ГОСТ)",
                 "Методика расчета",
                 "Формула расчета воздухообмена",
@@ -51,30 +52,46 @@ namespace HvacAutoCalculator.ExcelGenerator
             int rIdx = 2;
             foreach (var room in rooms)
             {
+                string occupantInfo = "—";
+                if (room.ToiletCount > 0 || room.UrinalCount > 0 || room.ShowerCount > 0 || room.SinkCount > 0)
+                {
+                    var p = new List<string>();
+                    if (room.ToiletCount > 0) p.Add($"{room.ToiletCount} унит.");
+                    if (room.UrinalCount > 0) p.Add($"{room.UrinalCount} писс.");
+                    if (room.ShowerCount > 0) p.Add($"{room.ShowerCount} душ.");
+                    if (room.SinkCount > 0) p.Add($"{room.SinkCount} умыв.");
+                    occupantInfo = string.Join(", ", p);
+                }
+                else if (room.PeopleCount > 0)
+                {
+                    occupantInfo = $"{room.PeopleCount} чел. {(room.HasNaturalVentilation ? "(окна)" : "")}";
+                }
+
                 wsRooms.Cell(rIdx, 1).Value = room.Number;
                 wsRooms.Cell(rIdx, 2).Value = room.RawName;
                 wsRooms.Cell(rIdx, 3).Value = room.NormalizedType;
                 wsRooms.Cell(rIdx, 4).Value = room.Area;
                 wsRooms.Cell(rIdx, 5).Value = room.Height;
                 wsRooms.Cell(rIdx, 6).FormulaA1 = $"ROUND(D{rIdx}*E{rIdx}, 2)";
-                wsRooms.Cell(rIdx, 7).Value = string.IsNullOrEmpty(room.NormCode) ? "СП 60.13330.2020" : room.NormCode;
-                wsRooms.Cell(rIdx, 8).Value = string.IsNullOrEmpty(room.CalculationMethod) ? "По кратности" : room.CalculationMethod;
-                wsRooms.Cell(rIdx, 9).Value = string.IsNullOrEmpty(room.CalculationFormula)
+                wsRooms.Cell(rIdx, 7).Value = occupantInfo;
+                wsRooms.Cell(rIdx, 8).Value = string.IsNullOrEmpty(room.NormCode) ? "СП 60.13330.2020" : room.NormCode;
+                wsRooms.Cell(rIdx, 9).Value = string.IsNullOrEmpty(room.CalculationMethod) ? "По кратности" : room.CalculationMethod;
+                wsRooms.Cell(rIdx, 10).Value = string.IsNullOrEmpty(room.CalculationFormula)
                     ? $"Lпр = {room.RequiredSupplyAir} м³/ч; Lвыт = {room.RequiredExhaustAir} м³/ч"
                     : room.CalculationFormula;
-                wsRooms.Cell(rIdx, 10).Value = room.RequiredSupplyAir;
-                wsRooms.Cell(rIdx, 11).Value = room.RequiredExhaustAir;
-                wsRooms.Cell(rIdx, 12).FormulaA1 = $"J{rIdx}-K{rIdx}";
-                wsRooms.Cell(rIdx, 13).Value = room.SystemTag;
-                wsRooms.Cell(rIdx, 14).Value = room.DetectionSource;
+                wsRooms.Cell(rIdx, 11).Value = room.RequiredSupplyAir;
+                wsRooms.Cell(rIdx, 12).Value = room.RequiredExhaustAir;
+                wsRooms.Cell(rIdx, 13).FormulaA1 = $"K{rIdx}-L{rIdx}";
+                wsRooms.Cell(rIdx, 14).Value = room.SystemTag;
+                wsRooms.Cell(rIdx, 15).Value = room.DetectionSource;
 
                 // Выравнивание чисел
                 wsRooms.Cell(rIdx, 4).Style.NumberFormat.Format = "#,##0.00";
                 wsRooms.Cell(rIdx, 5).Style.NumberFormat.Format = "#,##0.00";
                 wsRooms.Cell(rIdx, 6).Style.NumberFormat.Format = "#,##0.00";
-                wsRooms.Cell(rIdx, 10).Style.NumberFormat.Format = "#,##0";
                 wsRooms.Cell(rIdx, 11).Style.NumberFormat.Format = "#,##0";
                 wsRooms.Cell(rIdx, 12).Style.NumberFormat.Format = "#,##0";
+                wsRooms.Cell(rIdx, 13).Style.NumberFormat.Format = "#,##0";
 
                 rIdx++;
             }
@@ -85,20 +102,20 @@ namespace HvacAutoCalculator.ExcelGenerator
                 wsRooms.Cell(rIdx, 3).Style.Font.Bold = true;
                 wsRooms.Cell(rIdx, 4).FormulaA1 = $"SUM(D2:D{rIdx - 1})";
                 wsRooms.Cell(rIdx, 6).FormulaA1 = $"SUM(F2:F{rIdx - 1})";
-                wsRooms.Cell(rIdx, 10).FormulaA1 = $"SUM(J2:J{rIdx - 1})";
                 wsRooms.Cell(rIdx, 11).FormulaA1 = $"SUM(K2:K{rIdx - 1})";
                 wsRooms.Cell(rIdx, 12).FormulaA1 = $"SUM(L2:L{rIdx - 1})";
+                wsRooms.Cell(rIdx, 13).FormulaA1 = $"SUM(M2:M{rIdx - 1})";
 
                 wsRooms.Cell(rIdx, 4).Style.NumberFormat.Format = "#,##0.00";
                 wsRooms.Cell(rIdx, 6).Style.NumberFormat.Format = "#,##0.00";
-                wsRooms.Cell(rIdx, 10).Style.NumberFormat.Format = "#,##0";
                 wsRooms.Cell(rIdx, 11).Style.NumberFormat.Format = "#,##0";
                 wsRooms.Cell(rIdx, 12).Style.NumberFormat.Format = "#,##0";
+                wsRooms.Cell(rIdx, 13).Style.NumberFormat.Format = "#,##0";
 
-                wsRooms.Range($"A{rIdx}:N{rIdx}").Style.Font.Bold = true;
-                wsRooms.Range($"A{rIdx}:N{rIdx}").Style.Fill.BackgroundColor = XLColor.FromHtml("#E6FFFA");
-                wsRooms.Range($"A1:N{rIdx}").Style.Border.SetOutsideBorder(XLBorderStyleValues.Thin);
-                wsRooms.Range($"A1:N{rIdx}").Style.Border.SetInsideBorder(XLBorderStyleValues.Thin);
+                wsRooms.Range($"A{rIdx}:O{rIdx}").Style.Font.Bold = true;
+                wsRooms.Range($"A{rIdx}:O{rIdx}").Style.Fill.BackgroundColor = XLColor.FromHtml("#E6FFFA");
+                wsRooms.Range($"A1:O{rIdx}").Style.Border.SetOutsideBorder(XLBorderStyleValues.Thin);
+                wsRooms.Range($"A1:O{rIdx}").Style.Border.SetInsideBorder(XLBorderStyleValues.Thin);
             }
             wsRooms.Columns().AdjustToContents();
 

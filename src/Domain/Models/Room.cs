@@ -14,13 +14,21 @@ namespace HvacAutoCalculator.Domain.Models
         public double Area { get; set; }
         public double Height { get; set; } = 3.3;
         public double? CeilingHeightOverride { get; set; }
-        public double EffectiveHeight => CeilingHeightOverride.HasValue && CeilingHeightOverride.Value > 0 && CeilingHeightOverride.Value < Height
+        public double EffectiveHeight => CeilingHeightOverride.HasValue && CeilingHeightOverride.Value > 0 && CeilingHeightOverride.Value <= Height
             ? CeilingHeightOverride.Value
             : Height;
         public double Volume => Math.Round(Area * EffectiveHeight, 2);
 
+        // Расчет по людям (Офисы, кабинеты, переговорные)
         public int PeopleCount { get; set; }
+        public int PeopleTempCount { get; set; }
         public bool HasNaturalVentilation { get; set; }
+
+        // Расчет по сан. приборам (Санузлы, душевые, уборные)
+        public int ToiletCount { get; set; }
+        public int UrinalCount { get; set; }
+        public int ShowerCount { get; set; }
+        public int SinkCount { get; set; }
 
         public string NormCode { get; set; } = "СП 60.13330.2020";
         public string NormCitation { get; set; } = "Кратность по справочнику";

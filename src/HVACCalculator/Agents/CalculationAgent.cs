@@ -29,7 +29,14 @@ namespace HvacAutoCalculator.HVACCalculator.Agents
                 exhaustFlow = supplyFlow; // По умолчанию баланс в помещении
             }
 
-            // 2. Расчет по кратностям (приоритет для тех. помещений)
+            // 2. Расчет по сан. приборам (Санузлы, уборные, душевые по СП 118.13330 / СП 44.13330)
+            if (room.ToiletCount > 0 || room.UrinalCount > 0 || room.ShowerCount > 0 || room.SinkCount > 0)
+            {
+                double fixtureExhaust = (room.ToiletCount * 50.0) + (room.UrinalCount * 25.0) + (room.ShowerCount * 75.0) + (room.SinkCount * 20.0);
+                exhaustFlow = Math.Max(exhaustFlow, fixtureExhaust);
+            }
+
+            // 3. Расчет по кратностям (приоритет для тех. помещений)
             if (_multiplicityNorms.TryGetValue(room.NormalizedType, out var norms))
             {
                 // Если норма < 10, считаем это кратностью (умножаем на объем). Иначе - фиксированный расход.

@@ -47,8 +47,9 @@ export function ExplicationPage({
                 <th className="py-2.5 px-2.5">Наименование</th>
                 <th className="py-2.5 px-2.5">Категория СП</th>
                 <th className="py-2.5 px-2.5">S (м²)</th>
-                <th className="py-2.5 px-2.5">Δh (м)</th>
+                <th className="py-2.5 px-2.5">H (м)</th>
                 <th className="py-2.5 px-2.5">V (м³)</th>
+                <th className="py-2.5 px-2.5">Люди / Сан. приборы</th>
                 <th className="py-2.5 px-2.5">Норматив (СП / ГОСТ)</th>
                 <th className="py-2.5 px-2.5">Формула расчета воздухообмена</th>
                 <th className="py-2.5 px-2.5">Приток Lпр</th>
@@ -60,6 +61,20 @@ export function ExplicationPage({
             <tbody className="divide-y divide-[#1e3a5f]/60">
               {filteredRooms.map((r) => {
                 const cat = getRoomCategory(r);
+
+                // Отображение людей или сан. приборов
+                let occupantBadge = '—';
+                if (r.toilets > 0 || r.urinals > 0 || r.showers > 0 || r.sinks > 0) {
+                  const parts = [];
+                  if (r.toilets > 0) parts.push(`${r.toilets} унит.`);
+                  if (r.urinals > 0) parts.push(`${r.urinals} писс.`);
+                  if (r.showers > 0) parts.push(`${r.showers} душ.`);
+                  if (r.sinks > 0) parts.push(`${r.sinks} умыв.`);
+                  occupantBadge = parts.join(', ');
+                } else if (r.peopleCount > 0) {
+                  occupantBadge = `${r.peopleCount} чел. ${r.hasNaturalVentilation ? '(окна)' : ''}`;
+                }
+
                 return (
                   <tr key={r.roomId} className="hover:bg-slate-800/50">
                     <td
@@ -82,6 +97,9 @@ export function ExplicationPage({
                     <td className="py-2 px-2.5 font-bold text-white">{r.area}</td>
                     <td className="py-2 px-2.5 text-slate-300 font-mono">{r.height}</td>
                     <td className="py-2 px-2.5 font-semibold text-sky-300 font-mono">{r.volume}</td>
+                    <td className="py-2 px-2.5 text-xs text-teal-300 font-mono">
+                      {occupantBadge}
+                    </td>
                     <td className="py-2 px-2.5 text-xs text-slate-300 font-mono">
                       {r.normCode || 'СП 60.13330.2020'}
                     </td>
@@ -117,7 +135,7 @@ export function ExplicationPage({
                 <td className="py-2.5 px-2.5 text-emerald-400">{totalArea} м²</td>
                 <td className="py-2.5 px-2.5 text-slate-300">{currentNetHeight} м</td>
                 <td className="py-2.5 px-2.5 text-sky-400">{totalVol} м³</td>
-                <td colSpan={2} className="py-2.5 px-2.5 text-slate-400">По нормам СП 60.13330 / СП 113.13330 / ГОСТ 21.602</td>
+                <td colSpan={3} className="py-2.5 px-2.5 text-slate-400">По нормам СП 60.13330 / СП 118.13330 / ГОСТ 21.602</td>
                 <td className="py-2.5 px-2.5 text-blue-400">{totalSupply} м³/ч</td>
                 <td className="py-2.5 px-2.5 text-emerald-400">{totalExhaust} м³/ч</td>
                 <td colSpan={2} className="py-2.5 px-2.5 text-teal-300">

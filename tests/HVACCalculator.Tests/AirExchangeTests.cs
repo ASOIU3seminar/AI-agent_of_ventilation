@@ -43,6 +43,94 @@ namespace HvacAutoCalculator.Tests
         }
 
         [Fact]
+        public async Task ApplyNormsAsync_Restroom_CalculatesByToiletsAndUrinals()
+        {
+            var engine = new HvacNormativeEngine(new HttpClient());
+            var room = new Room
+            {
+                RawName = "Санузел мужской",
+                Area = 10.55,
+                Height = 2.9,
+                ToiletCount = 2,
+                UrinalCount = 3
+            };
+
+            await engine.ApplyNormsAsync(room);
+
+            // 2 унитаза * 50 + 3 писсуара * 25 = 100 + 75 = 175 м3/ч (как в проекте инженера К32)
+            Assert.Equal(0, room.RequiredSupplyAir);
+            Assert.Equal(175, room.RequiredExhaustAir);
+            Assert.Contains("СП 118.13330", room.NormCode);
+            Assert.Contains("2 унит × 50 + 3 писс × 25", room.CalculationFormula);
+            Assert.Equal("В-СУ", room.SystemTag);
+        }
+
+        [Fact]
+        public async Task ApplyNormsAsync_Restroom_AutoDeterminesCombinedToiletAndUrinal()
+        {
+            var engine = new HvacNormativeEngine(new HttpClient());
+            var room = new Room
+            {
+                RawName = "Санузел",
+                Area = 3.56,
+                Height = 3.3
+            };
+
+            await engine.ApplyNormsAsync(room);
+
+            // По умолчанию: 1 унитаз (50) + 1 писсуар (25) = 75 м3/ч (как в строке 18 экспликации инженера)
+            Assert.Equal(0, room.RequiredSupplyAir);
+            Assert.Equal(75, room.RequiredExhaustAir);
+            Assert.Equal(1, room.ToiletCount);
+            Assert.Equal(1, room.UrinalCount);
+            Assert.Contains("СП 118.13330", room.NormCode);
+        }
+
+        [Fact]
+        public async Task ApplyNormsAsync_Office_CalculatesStrictlyByPeople()
+        {
+            var engine = new HvacNormativeEngine(new HttpClient());
+            var room = new Room
+            {
+                RawName = "Кабинет инженера / Офис",
+                Area = 24.0,
+                Height = 3.3,
+                HasNaturalVentilation = false
+            };
+
+            await engine.ApplyNormsAsync(room);
+
+            // 24 м2 / 6 м2 = 4 человека. Без проветривания: 4 * 60 = 240 м3/ч приток и вытяжка
+            Assert.Equal(4, room.PeopleCount);
+            Assert.Equal(240, room.RequiredSupplyAir);
+            Assert.Equal(240, room.RequiredExhaustAir);
+            Assert.Contains("4 чел × 60", room.CalculationFormula);
+            Assert.Contains("СП 60.13330", room.NormCode);
+            Assert.Contains("СанПиН 1.2.3685-21", room.NormCode);
+        }
+
+        [Fact]
+        public async Task ApplyNormsAsync_OfficeWithWindows_Uses40M3PerHour()
+        {
+            var engine = new HvacNormativeEngine(new HttpClient());
+            var room = new Room
+            {
+                RawName = "Офис дирекции",
+                Area = 18.0,
+                Height = 3.3,
+                PeopleCount = 3,
+                HasNaturalVentilation = true
+            };
+
+            await engine.ApplyNormsAsync(room);
+
+            // 3 человека * 40 м3/ч = 120 м3/ч
+            Assert.Equal(120, room.RequiredSupplyAir);
+            Assert.Equal(120, room.RequiredExhaustAir);
+            Assert.Contains("3 чел × 40", room.CalculationFormula);
+        }
+
+        [Fact]
         public async Task ApplyNormsAsync_Parking_SetsSpCitationAndDetailedFormula()
         {
             var engine = new HvacNormativeEngine(new HttpClient());

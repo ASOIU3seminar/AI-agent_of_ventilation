@@ -33,17 +33,19 @@ namespace HvacAutoCalculator.Tests
                 },
                 new Room
                 {
-                    Number = "-5.03",
-                    RawName = "Помещение хранения пожарного инвентаря",
-                    NormalizedType = "Кладовая (В4)",
-                    Area = 16.82,
-                    Height = 3.60,
-                    NormCode = "СП 60.13330.2020",
-                    CalculationMethod = "По кратности (K=1.0)",
-                    CalculationFormula = "Lпр = 1.0 × 60.55 = 61 м³/ч; Lвыт = 1.0 × 60.55 = 61 м³/ч",
-                    RequiredSupplyAir = 61,
-                    RequiredExhaustAir = 61,
-                    SystemTag = "П1 / В1",
+                    Number = "-5.02",
+                    RawName = "Санузел",
+                    NormalizedType = "Санузел",
+                    Area = 4.0,
+                    Height = 3.30,
+                    ToiletCount = 1,
+                    UrinalCount = 1,
+                    NormCode = "СП 118.13330.2022 табл. 7.1 / СП 44.13330",
+                    CalculationMethod = "По сан. приборам (СП 118.13330)",
+                    CalculationFormula = "Lвыт = 1 унит × 50 + 1 писс × 25 = 75 м³/ч; Lпр = 0 (переток по СП 118.13330)",
+                    RequiredSupplyAir = 0,
+                    RequiredExhaustAir = 75,
+                    SystemTag = "В-СУ",
                     DetectionSource = "Экспликация PDF + План"
                 }
             };
@@ -70,14 +72,21 @@ namespace HvacAutoCalculator.Tests
                 Assert.NotNull(ws);
 
                 // Проверяем заголовки колонок
-                Assert.Equal("Нормативный документ (СП / ГОСТ)", ws.Cell("G1").GetString());
-                Assert.Equal("Методика расчета", ws.Cell("H1").GetString());
-                Assert.Equal("Формула расчета воздухообмена", ws.Cell("I1").GetString());
+                Assert.Equal("Люди / Сан. приборы", ws.Cell("G1").GetString());
+                Assert.Equal("Нормативный документ (СП / ГОСТ)", ws.Cell("H1").GetString());
+                Assert.Equal("Методика расчета", ws.Cell("I1").GetString());
+                Assert.Equal("Формула расчета воздухообмена", ws.Cell("J1").GetString());
 
-                // Проверяем заполнение данных первой строки
+                // Проверяем заполнение данных первой строки (автостоянка)
                 Assert.Equal("-5.01", ws.Cell("A2").GetString());
-                Assert.Equal("СП 60.13330.2020 / СП 113.13330", ws.Cell("G2").GetString());
-                Assert.Contains("Lвыт = 5.0", ws.Cell("I2").GetString());
+                Assert.Equal("СП 60.13330.2020 / СП 113.13330", ws.Cell("H2").GetString());
+                Assert.Contains("Lвыт = 5.0", ws.Cell("J2").GetString());
+
+                // Проверяем заполнение данных второй строки (санузел)
+                Assert.Equal("-5.02", ws.Cell("A3").GetString());
+                Assert.Contains("1 унит.", ws.Cell("G3").GetString());
+                Assert.Contains("1 писс.", ws.Cell("G3").GetString());
+                Assert.Equal(75, ws.Cell("L3").GetDouble());
 
                 // Проверяем наличие формулы в объеме V
                 Assert.True(ws.Cell("F2").HasFormula, "Ячейка объема F2 должна содержать формулу Excel");
@@ -87,7 +96,8 @@ namespace HvacAutoCalculator.Tests
                 Assert.Equal("ИТОГО ПО ЭТАЖУ:", ws.Cell("C4").GetString());
                 Assert.True(ws.Cell("D4").HasFormula, "Сумма площадей должна быть формулой SUM");
                 Assert.Equal("SUM(D2:D3)", ws.Cell("D4").FormulaA1);
-                Assert.Equal("SUM(J2:J3)", ws.Cell("J4").FormulaA1);
+                Assert.Equal("SUM(K2:K3)", ws.Cell("K4").FormulaA1);
+                Assert.Equal("SUM(L2:L3)", ws.Cell("L4").FormulaA1);
             }
             finally
             {

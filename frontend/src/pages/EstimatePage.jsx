@@ -18,7 +18,7 @@ export function EstimatePage({ estimate, onExportExcel }) {
           </div>
           <button
             onClick={onExportExcel}
-            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-emerald-500 hover:from-blue-500 hover:to-emerald-400 text-white font-bold text-xs flex items-center gap-2 shadow-lg transition-all"
+            className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 transition-all"
           >
             <FileSpreadsheet className="w-4 h-4" /> Выгрузить смету и ХОВС в Excel
           </button>
